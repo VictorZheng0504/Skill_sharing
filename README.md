@@ -173,10 +173,12 @@ ppt-studio/
 ## 致谢
 
 模板与工作流设计参考了以下开源项目的精华:
-[hugohe3/ppt-master](https://github.com/hugohe3/ppt-master)(spec-lock 执行纪律)、
-[op7418/guizang-ppt-skill](https://github.com/op7418/guizang-ppt-skill)(杂志/瑞士配色与明暗节奏)、
-[lewislulu/html-ppt-skill](https://github.com/lewislulu/html-ppt-skill)(设计令牌架构与主题体系)、
-[ningzimu/codex-ppt-skill](https://github.com/ningzimu/codex-ppt-skill)(审批门与风格 Brief)。
+[hugohe3/ppt-master](https://github.com/hugohe3/ppt-master)(spec-lock 执行纪律,MIT)、
+[op7418/guizang-ppt-skill](https://github.com/op7418/guizang-ppt-skill)(杂志/瑞士配色与明暗节奏理念,AGPL-3.0)、
+[lewislulu/html-ppt-skill](https://github.com/lewislulu/html-ppt-skill)(设计令牌架构与主题体系,MIT)、
+[ningzimu/codex-ppt-skill](https://github.com/ningzimu/codex-ppt-skill)(审批门与风格 Brief,MIT)。
+
+本项目为独立实现:引擎基于 pptxgenjs 公开 API 从零编写,未复制上述任何项目的代码、模板或文档文本;对 guizang-ppt-skill 仅参考了配色数值与设计理念。
 
 ## License
 
