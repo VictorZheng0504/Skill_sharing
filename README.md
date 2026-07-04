@@ -170,15 +170,20 @@ ppt-studio/
 **Q: 生成到一半改主意换主题怎么办?**
 改 spec-lock 里的 `theme_id`,重跑生成脚本——版式与内容代码一行都不用动。
 
-## 致谢
+## 参考与致谢
 
-模板与工作流设计参考了以下开源项目的精华:
-[hugohe3/ppt-master](https://github.com/hugohe3/ppt-master)(spec-lock 执行纪律,MIT)、
-[op7418/guizang-ppt-skill](https://github.com/op7418/guizang-ppt-skill)(杂志/瑞士配色与明暗节奏理念,AGPL-3.0)、
-[lewislulu/html-ppt-skill](https://github.com/lewislulu/html-ppt-skill)(设计令牌架构与主题体系,MIT)、
-[ningzimu/codex-ppt-skill](https://github.com/ningzimu/codex-ppt-skill)(审批门与风格 Brief,MIT)。
+本项目的模板体系与工作流设计,站在以下四个开源项目的肩膀上。向各位作者的分享精神致以诚挚感谢:
 
-本项目为独立实现:引擎基于 pptxgenjs 公开 API 从零编写,未复制上述任何项目的代码、模板或文档文本;对 guizang-ppt-skill 仅参考了配色数值与设计理念。
+| 项目 | 作者 | 许可证 | 本项目借鉴的内容 |
+|---|---|---|---|
+| [ppt-master](https://github.com/hugohe3/ppt-master) | [@hugohe3](https://github.com/hugohe3) | MIT | spec-lock「单一真值源」执行锁机制;逐页生成前重读规范、防止长 deck 风格漂移的工程纪律;品牌与布局解耦的模块化思路 |
+| [guizang-ppt-skill](https://github.com/op7418/guizang-ppt-skill) | [@op7418](https://github.com/op7418)(归藏) | AGPL-3.0 | 「配色预设制」理念(只提供成套配色,不接受自定义 hex);hero 页与内容页交替的明暗节奏规则;杂志风四套纸墨配色与瑞士风三色的色彩灵感 |
+| [html-ppt-skill](https://github.com/lewislulu/html-ppt-skill) | [@lewislulu](https://github.com/lewislulu) | MIT | 本项目最核心的架构灵感——「一套语义化设计令牌 + N 个主题只覆盖令牌取值 + 版式只引用令牌」;主题库的场景化分类方式;tokyo-night / nord 等深色主题选型 |
+| [codex-ppt-skill](https://github.com/ningzimu/codex-ppt-skill) | [@ningzimu](https://github.com/ningzimu) | MIT | 多级审批门(approval gates)的 Human-in-the-loop 工作流设计;样本页通过后作为全 deck 风格锚点的做法;按「适用场景」而非「颜色」组织风格库的分类准则 |
+
+同时感谢 [PptxGenJS](https://github.com/gitbrent/PptxGenJS)(MIT)——本项目引擎的唯一运行时依赖。
+
+**独立实现声明**:本项目引擎(`assets/deck_engine.js`)基于 pptxgenjs 公开 API 从零编写,SKILL.md 与全部文档为原创撰写,未复制上述任何项目的代码、模板或文档文本;对 guizang-ppt-skill(AGPL-3.0)仅参考了配色数值与设计理念,不构成其衍生作品。如上述项目作者认为署名方式有不妥之处,欢迎提 issue 联系调整。
 
 ## License
 
