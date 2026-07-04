@@ -1,0 +1,303 @@
+{
+  "academic-navy": {
+    "label": "经典深蓝 · Academic Navy",
+    "scene": ["学术会议", "临床汇报", "科研答辩"],
+    "dark": false,
+    "radius": 0.06,
+    "c": {
+      "bg": "FFFFFF", "bgSoft": "F7F8FA", "surface": "F7F8FA", "border": "E2E8F0",
+      "t1": "1A1A1A", "t2": "5A5A5A", "t3": "8A8F9E",
+      "accent": "1F3A5F", "accent2": "C9A227",
+      "good": "3B7A57", "warn": "C98500", "bad": "C13A3A",
+      "hero": "1F3A5F", "heroT1": "FFFFFF", "heroT2": "C9D2E0", "heroAccent": "E4C55B", "heroLine": "56718F"
+    },
+    "f": { "title": "Noto Serif SC", "body": "Noto Sans SC", "mono": "Consolas", "num": "Georgia" },
+    "fontNote": "标题需思源宋体(Noto Serif SC),正文思源黑体;未安装回退系统默认"
+  },
+  "minimal-gray": {
+    "label": "极简灰白 · Minimal Gray",
+    "scene": ["技术分享", "医学+AI", "含代码/公式的内容", "内部汇报"],
+    "dark": false,
+    "radius": 0.05,
+    "c": {
+      "bg": "FFFFFF", "bgSoft": "FAFAFA", "surface": "F5F5F6", "border": "E4E4E7",
+      "t1": "0C0D10", "t2": "55596A", "t3": "9CA1B0",
+      "accent": "0F62FE", "accent2": "3B3F4A",
+      "good": "1AAF6C", "warn": "C98500", "bad": "C13A3A",
+      "hero": "0C0D10", "heroT1": "FFFFFF", "heroT2": "A1A1AA", "heroAccent": "4589FF", "heroLine": "3A3A40"
+    },
+    "f": { "title": "Inter", "body": "Noto Sans SC", "mono": "JetBrains Mono", "num": "Inter" },
+    "fontNote": "需 Inter / JetBrains Mono;未安装回退 Helvetica/等宽默认"
+  },
+  "research-defense": {
+    "label": "科研答辩 · Research Defense",
+    "scene": ["毕业答辩", "研究成果汇报", "论文展示"],
+    "dark": false,
+    "radius": 0.06,
+    "c": {
+      "bg": "FFFFFF", "bgSoft": "F6F9FF", "surface": "F1F5FB", "border": "D7E0EC",
+      "t1": "12233D", "t2": "47586E", "t3": "8194AB",
+      "accent": "334155", "accent2": "0F766E",
+      "good": "0F766E", "warn": "B45309", "bad": "B91C1C",
+      "hero": "1E293B", "heroT1": "FFFFFF", "heroT2": "B5C2D4", "heroAccent": "2DD4BF", "heroLine": "3E4C63"
+    },
+    "f": { "title": "Noto Serif SC", "body": "Noto Sans SC", "mono": "Consolas", "num": "Georgia" },
+    "fontNote": "同 academic-navy,思源系字体建议安装"
+  },
+  "mckinsey": {
+    "label": "麦肯锡蓝灰 · Consulting",
+    "scene": ["商业咨询", "战略汇报", "董事会材料", "执行路线"],
+    "dark": false,
+    "radius": 0,
+    "c": {
+      "bg": "FFFFFF", "bgSoft": "F6F8FA", "surface": "F6F8FA", "border": "D8DEE8",
+      "t1": "111111", "t2": "475569", "t3": "6B7280",
+      "accent": "243447", "accent2": "4A6B8A",
+      "good": "2E7D4F", "warn": "B45309", "bad": "B91C1C",
+      "hero": "243447", "heroT1": "FFFFFF", "heroT2": "B9C4D0", "heroAccent": "7FA3C4", "heroLine": "48586B"
+    },
+    "f": { "title": "Noto Sans SC", "body": "Noto Sans SC", "mono": "Consolas", "num": "Georgia" },
+    "fontNote": "全系统安全字体思路;思源黑体缺失时回退雅黑/苹方"
+  },
+  "clean-pro": {
+    "label": "清爽专业 · Clean Pro",
+    "scene": ["工作汇报", "项目复盘", "晋升述职", "技术分享"],
+    "dark": false,
+    "radius": 0.08,
+    "c": {
+      "bg": "FFFFFF", "bgSoft": "F8FAFC", "surface": "F8FAFC", "border": "E2E8F0",
+      "t1": "0F172A", "t2": "475569", "t3": "94A3B8",
+      "accent": "2563EB", "accent2": "0891B2",
+      "good": "10B981", "warn": "F59E0B", "bad": "EF4444",
+      "hero": "2563EB", "heroT1": "FFFFFF", "heroT2": "C7D8FC", "heroAccent": "FBBF24", "heroLine": "5484EF"
+    },
+    "f": { "title": "Noto Sans SC", "body": "Noto Sans SC", "mono": "Consolas", "num": "Inter" },
+    "fontNote": "思源黑体缺失时回退雅黑/苹方,风格损失小"
+  },
+  "dashboard": {
+    "label": "数据仪表盘 · Dashboard",
+    "scene": ["KPI 汇报", "运营分析", "BI 看板", "数据评审"],
+    "dark": false,
+    "radius": 0.08,
+    "c": {
+      "bg": "FFFFFF", "bgSoft": "F8FAFC", "surface": "F1F5F9", "border": "E2E8F0",
+      "t1": "0F172A", "t2": "64748B", "t3": "94A3B8",
+      "accent": "1976D2", "accent2": "8B5CF6",
+      "good": "10B981", "warn": "F59E0B", "bad": "EF4444",
+      "hero": "0F172A", "heroT1": "F1F5F9", "heroT2": "94A3B8", "heroAccent": "38BDF8", "heroLine": "2C3A52"
+    },
+    "f": { "title": "Inter", "body": "Noto Sans SC", "mono": "JetBrains Mono", "num": "Inter" },
+    "fontNote": "数字用 Inter(等宽数字特性佳);缺失回退 Arial"
+  },
+  "magazine-ink": {
+    "label": "杂志·墨水经典 · Magazine Ink",
+    "scene": ["个人故事", "内容分享", "品牌叙事", "发布会"],
+    "dark": false,
+    "radius": 0,
+    "c": {
+      "bg": "F1EFEA", "bgSoft": "E8E5DE", "surface": "E8E5DE", "border": "C9C5BB",
+      "t1": "0A0A0B", "t2": "3C3C3E", "t3": "6E6D68",
+      "accent": "0A0A0B", "accent2": "8A6D3B",
+      "good": "3B7A57", "warn": "A97800", "bad": "9C3A32",
+      "hero": "0A0A0B", "heroT1": "F1EFEA", "heroT2": "B9B6AD", "heroAccent": "D9B96C", "heroLine": "3A3A3C"
+    },
+    "f": { "title": "Noto Serif SC", "body": "Noto Sans SC", "mono": "IBM Plex Mono", "num": "Playfair Display" },
+    "fontNote": "英文大字需 Playfair Display,中文标题思源宋体;未安装回退 Georgia/宋体"
+  },
+  "indigo-porcelain": {
+    "label": "杂志·靛蓝瓷 · Indigo Porcelain",
+    "scene": ["科技叙事", "研究故事", "数据人文"],
+    "dark": false,
+    "radius": 0,
+    "c": {
+      "bg": "F1F3F5", "bgSoft": "E4E8EC", "surface": "E4E8EC", "border": "C6CDD5",
+      "t1": "0A1F3D", "t2": "34496B", "t3": "7C8AA0",
+      "accent": "0A1F3D", "accent2": "3E6B8F",
+      "good": "2E6B57", "warn": "A97800", "bad": "9C3A32",
+      "hero": "0A1F3D", "heroT1": "F1F3F5", "heroT2": "A9B6C9", "heroAccent": "D9B96C", "heroLine": "2C4260"
+    },
+    "f": { "title": "Noto Serif SC", "body": "Noto Sans SC", "mono": "IBM Plex Mono", "num": "Playfair Display" },
+    "fontNote": "同 magazine-ink 字体栈"
+  },
+  "kraft-paper": {
+    "label": "杂志·牛皮纸 · Kraft Paper",
+    "scene": ["人文内容", "文学分享", "手作故事"],
+    "dark": false,
+    "radius": 0,
+    "c": {
+      "bg": "EEDFC7", "bgSoft": "E0D0B6", "surface": "E0D0B6", "border": "C9B694",
+      "t1": "2A1E13", "t2": "4A3826", "t3": "7A6A52",
+      "accent": "2A1E13", "accent2": "8A5A2B",
+      "good": "3B6B47", "warn": "A96800", "bad": "8F3A2A",
+      "hero": "2A1E13", "heroT1": "EEDFC7", "heroT2": "B8A587", "heroAccent": "D9A45B", "heroLine": "4A3A28"
+    },
+    "f": { "title": "Noto Serif SC", "body": "Noto Sans SC", "mono": "IBM Plex Mono", "num": "Playfair Display" },
+    "fontNote": "同 magazine-ink 字体栈"
+  },
+  "dune": {
+    "label": "杂志·沙丘 · Dune",
+    "scene": ["艺术设计", "美学主题", "摄影分享"],
+    "dark": false,
+    "radius": 0,
+    "c": {
+      "bg": "F0E6D2", "bgSoft": "E4D7BE", "surface": "E4D7BE", "border": "C9BCA0",
+      "t1": "1F1A14", "t2": "4C4335", "t3": "7E7361",
+      "accent": "1F1A14", "accent2": "A0672D",
+      "good": "3B6B47", "warn": "A96800", "bad": "8F3A2A",
+      "hero": "1F1A14", "heroT1": "F0E6D2", "heroT2": "AFA48E", "heroAccent": "C98A3D", "heroLine": "3E362A"
+    },
+    "f": { "title": "Noto Serif SC", "body": "Noto Sans SC", "mono": "IBM Plex Mono", "num": "Playfair Display" },
+    "fontNote": "同 magazine-ink 字体栈"
+  },
+  "swiss-ikb": {
+    "label": "瑞士·克莱因蓝 · Swiss IKB",
+    "scene": ["融资路演", "设计分享", "品牌发布", "产品发布"],
+    "dark": false,
+    "radius": 0,
+    "c": {
+      "bg": "FAFAF8", "bgSoft": "F0F0EE", "surface": "F0F0EE", "border": "D4D4D2",
+      "t1": "0A0A0A", "t2": "525252", "t3": "737373",
+      "accent": "002FA7", "accent2": "5B7BFF",
+      "good": "1AAF6C", "warn": "F5A524", "bad": "E0445A",
+      "hero": "002FA7", "heroT1": "FFFFFF", "heroT2": "C9D4FF", "heroAccent": "FFD500", "heroLine": "4059B8"
+    },
+    "f": { "title": "Inter", "body": "Inter", "mono": "JetBrains Mono", "num": "Inter" },
+    "fontNote": "需安装 Inter / JetBrains Mono;未安装回退 Helvetica/Arial,风格损失小"
+  },
+  "swiss-lemon": {
+    "label": "瑞士·柠檬黄 · Swiss Lemon",
+    "scene": ["年轻品牌", "创意提案", "活动宣讲"],
+    "dark": false,
+    "radius": 0,
+    "c": {
+      "bg": "FAFAF8", "bgSoft": "F0F0EE", "surface": "F0F0EE", "border": "D4D4D2",
+      "t1": "0A0A0A", "t2": "525252", "t3": "737373",
+      "accent": "0A0A0A", "accentFill": "FFD500", "accent2": "8A7500",
+      "good": "1AAF6C", "warn": "D98E00", "bad": "E0445A",
+      "hero": "FFD500", "heroT1": "0A0A0A", "heroT2": "4A4300", "heroAccent": "0A0A0A", "heroLine": "C7A800"
+    },
+    "f": { "title": "Inter", "body": "Inter", "mono": "JetBrains Mono", "num": "Inter" },
+    "fontNote": "同 swiss-ikb;黄底 hero 页文字为纯黑,保证对比度"
+  },
+  "swiss-orange": {
+    "label": "瑞士·安全橙 · Swiss Orange",
+    "scene": ["工业主题", "工程汇报", "警示性内容"],
+    "dark": false,
+    "radius": 0,
+    "c": {
+      "bg": "FAFAF8", "bgSoft": "F0F0EE", "surface": "F0F0EE", "border": "D4D4D2",
+      "t1": "0A0A0A", "t2": "525252", "t3": "737373",
+      "accent": "D14310", "accentFill": "FF6B35", "accent2": "8A3A12",
+      "good": "1AAF6C", "warn": "D98E00", "bad": "C42B2B",
+      "hero": "0A0A0A", "heroT1": "FAFAF8", "heroT2": "9A9A96", "heroAccent": "FF6B35", "heroLine": "323230"
+    },
+    "f": { "title": "Inter", "body": "Inter", "mono": "JetBrains Mono", "num": "Inter" },
+    "fontNote": "同 swiss-ikb"
+  },
+  "tokyo-night": {
+    "label": "东京夜 · Tokyo Night",
+    "scene": ["技术分享", "开发者大会", "深色环境放映"],
+    "dark": true,
+    "radius": 0.06,
+    "c": {
+      "bg": "1A1B26", "bgSoft": "16161E", "surface": "24283B", "border": "3B4261",
+      "t1": "C0CAF5", "t2": "A9B1D6", "t3": "565F89",
+      "accent": "7AA2F7", "accent2": "BB9AF7",
+      "good": "9ECE6A", "warn": "E0AF68", "bad": "F7768E",
+      "hero": "16161E", "heroT1": "C0CAF5", "heroT2": "787FA6", "heroAccent": "7AA2F7", "heroLine": "3B4261"
+    },
+    "f": { "title": "Inter", "body": "Noto Sans SC", "mono": "JetBrains Mono", "num": "Inter" },
+    "fontNote": "深色主题,投影环境偏亮时慎用;打印讲义请换浅色主题"
+  },
+  "nord": {
+    "label": "北欧冷蓝 · Nord",
+    "scene": ["技术分享", "架构评审", "深色环境放映"],
+    "dark": true,
+    "radius": 0.06,
+    "c": {
+      "bg": "2E3440", "bgSoft": "292E39", "surface": "3B4252", "border": "4C566A",
+      "t1": "ECEFF4", "t2": "D8DEE9", "t3": "7B88A1",
+      "accent": "88C0D0", "accent2": "81A1C1",
+      "good": "A3BE8C", "warn": "EBCB8B", "bad": "BF616A",
+      "hero": "242933", "heroT1": "ECEFF4", "heroT2": "8B96AB", "heroAccent": "88C0D0", "heroLine": "434C5E"
+    },
+    "f": { "title": "Inter", "body": "Noto Sans SC", "mono": "JetBrains Mono", "num": "Inter" },
+    "fontNote": "深色主题,同 tokyo-night 注意事项"
+  },
+  "terminal-green": {
+    "label": "绿屏终端 · Terminal Green",
+    "scene": ["黑客马拉松", "命令行工具分享", "极客主题"],
+    "dark": true,
+    "radius": 0,
+    "c": {
+      "bg": "0A0E0A", "bgSoft": "0D120D", "surface": "121A12", "border": "1E3320",
+      "t1": "D2F7D2", "t2": "8FCF9A", "t3": "4E7A57",
+      "accent": "2EE86C", "accent2": "9BFFC2",
+      "good": "2EE86C", "warn": "E8D02E", "bad": "FF5C5C",
+      "hero": "050805", "heroT1": "D2F7D2", "heroT2": "6FA57B", "heroAccent": "2EE86C", "heroLine": "1E3320"
+    },
+    "f": { "title": "JetBrains Mono", "body": "Noto Sans SC", "mono": "JetBrains Mono", "num": "JetBrains Mono" },
+    "fontNote": "标题即等宽字体是本主题特色;需安装 JetBrains Mono"
+  },
+  "warm-academic": {
+    "label": "暖色学术 · Warm Academic",
+    "scene": ["教学课件", "培训", "科普讲座"],
+    "dark": false,
+    "radius": 0.08,
+    "c": {
+      "bg": "FAF7F2", "bgSoft": "F1EAE0", "surface": "F1EAE0", "border": "DDD2C2",
+      "t1": "2C2416", "t2": "5C5142", "t3": "8C8172",
+      "accent": "7B3F00", "accent2": "C25B28",
+      "good": "3B7A57", "warn": "C98500", "bad": "C13A3A",
+      "hero": "33270F", "heroT1": "FAF7F2", "heroT2": "C4B49B", "heroAccent": "E8A25B", "heroLine": "574828"
+    },
+    "f": { "title": "Noto Serif SC", "body": "Noto Sans SC", "mono": "Consolas", "num": "Georgia" },
+    "fontNote": "同 academic-navy 字体栈"
+  },
+  "soft-pastel": {
+    "label": "柔和粉彩 · Soft Pastel",
+    "scene": ["轻松分享", "团队活动", "生活方式内容"],
+    "dark": false,
+    "radius": 0.1,
+    "c": {
+      "bg": "FFFFFF", "bgSoft": "F8F5FC", "surface": "F4EFFB", "border": "E7DFF2",
+      "t1": "3B3547", "t2": "6E6685", "t3": "A29AB8",
+      "accent": "6B4EE6", "accentFill": "7A5CFF", "accent2": "FF5C8A",
+      "good": "1AAF6C", "warn": "F5A524", "bad": "E0445A",
+      "hero": "6B4EE6", "heroT1": "FFFFFF", "heroT2": "DCD3FF", "heroAccent": "FFD6E4", "heroLine": "8D77EB"
+    },
+    "f": { "title": "Noto Sans SC", "body": "Noto Sans SC", "mono": "Consolas", "num": "Inter" },
+    "fontNote": "思源黑体缺失时回退雅黑/苹方"
+  },
+  "neo-brutalism": {
+    "label": "新粗野 · Neo Brutalism",
+    "scene": ["创意宣言", "先锋设计", "个人主页式分享"],
+    "dark": false,
+    "radius": 0,
+    "c": {
+      "bg": "FFFDF5", "bgSoft": "FFF8E0", "surface": "FFFDF5", "border": "0A0A0A",
+      "cardLine": "0A0A0A", "cardLineW": 2,
+      "t1": "0A0A0A", "t2": "33312B", "t3": "6B675C",
+      "accent": "0A0A0A", "accentFill": "FFD500", "accent2": "FF5C8A",
+      "good": "1AAF6C", "warn": "D98E00", "bad": "E0445A",
+      "hero": "0A0A0A", "heroT1": "FFFDF5", "heroT2": "B8B4A6", "heroAccent": "FFD500", "heroLine": "3A3830"
+    },
+    "f": { "title": "Inter", "body": "Noto Sans SC", "mono": "JetBrains Mono", "num": "Inter" },
+    "fontNote": "卡片带 2pt 黑描边是本主题特色"
+  },
+  "bauhaus": {
+    "label": "包豪斯 · Bauhaus",
+    "scene": ["设计史", "美学课程", "先锋艺术主题"],
+    "dark": false,
+    "radius": 0,
+    "c": {
+      "bg": "F5F1E8", "bgSoft": "ECE6D8", "surface": "ECE6D8", "border": "D4CBB8",
+      "t1": "1A1A1A", "t2": "4A463D", "t3": "7C7668",
+      "accent": "C42B1F", "accentFill": "D02F23", "accent2": "1F5AA8",
+      "good": "2E7D4F", "warn": "D9A800", "bad": "C42B1F",
+      "hero": "D02F23", "heroT1": "F5F1E8", "heroT2": "F2C7B8", "heroAccent": "F0C020", "heroLine": "E05A44"
+    },
+    "f": { "title": "Inter", "body": "Noto Sans SC", "mono": "JetBrains Mono", "num": "Inter" },
+    "fontNote": "红底 hero 页为本主题特色;正文页红蓝黄三原色点缀"
+  }
+}
