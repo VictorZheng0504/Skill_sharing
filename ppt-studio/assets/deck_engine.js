@@ -1,41 +1,36 @@
 /**
- * deck_engine.js — ppt-studio 通用版式引擎
+ * deck_engine.js — ppt-studio v2 通用版式引擎(版式 DNA 架构)
  * 依赖: pptxgenjs   ( npm i pptxgenjs )
  *
- * 设计原则(借鉴 html-ppt-skill 的令牌架构):
- *   - themes.json 里每个主题是一组语义化设计令牌(颜色/字体/圆角)
- *   - 版式函数只引用令牌,绝不写死色值 → 主题 × 版式自由组合
- *   - hero 页(封面/幕封/金句/收束)与内容页用不同底色,天然形成明暗节奏
+ * v2 核心变化:主题不再只是配色——每个主题携带一份「版式 DNA」:
+ *   - themes.json 的 layout 块:header/list/footer/num/align/scale(内容页排版词汇)
+ *   - deck_styles.js:每主题专属的 5 个 hero 构图(cover/divider/statement/closing/bigstat)
+ *   任意两个主题并排,排版构图可辨识地不同,而不只是换色。
  *
- * 用法:
+ * 对外 API 与 v1 完全一致:
  *   const { createDeck, listThemes } = require("./deck_engine");
- *   const d = createDeck("swiss-ikb", { title:"...", author:"...", footer:"页脚品牌语" });
- *   d.S.cover({ kicker:"KEYNOTE 2026", title:[["把想法",false],["讲清楚",true]],
- *               subtitle:"副标题", speaker:"主讲:某某", tag:"内部分享", notes:"口播…" });
- *   d.S.contentRows({ kicker:"方法", title:"三个步骤", rows:[["01","要点","说明"]], page:"02" });
- *   await d.save("out.pptx");
+ *   const d = createDeck("mckinsey", { title, author, footer, slogan, source });
+ *   d.S.cover({...}); d.S.contentRows({...}); ... await d.save("out.pptx");
  *
- * 约定:
- *   - 富文本标题参数 title/lines 用 runs 数组: [[文字, 是否强调色, 是否换行], ...]
- *   - 所有版式接受 page(页码字符串,null 不显示)和 notes(演讲者备注)
- *   - 颜色一律不带 # 号(pptxgenjs 要求)
+ * 约定:富文本标题 [[文字, 强调?, 换行?], ...];所有版式接受 page 与 notes;颜色不带 #。
  */
 const pptxgen = require("pptxgenjs");
 const path = require("path");
 const THEMES = require(path.join(__dirname, "themes.json"));
+const STYLES = require(path.join(__dirname, "deck_styles.js"));
 
-const PW = 13.333, PH = 7.5;   // 16:9 画布(inch)
-const MX = 0.85;               // 左右边距
-const CW = PW - MX * 2;        // 内容区宽度
+const PW = 13.333, PH = 7.5, MX = 0.85, CW = PW - MX * 2;
 
 function listThemes() {
-  return Object.entries(THEMES).map(([k, v]) => ({ id: k, label: v.label, scene: v.scene }));
+  return Object.entries(THEMES).map(([k, v]) => ({ id: k, label: v.label, scene: v.scene, persona: (v.layout || {}).persona }));
 }
+
+const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
 
 function createDeck(themeName, meta = {}) {
   const T = THEMES[themeName];
   if (!T) throw new Error(`未知主题 "${themeName}"。可选: ${Object.keys(THEMES).join(", ")}`);
-  const C = T.c, F = T.f, R = T.radius || 0;
+  const C = T.c, F = T.f, R = T.radius || 0, L = T.layout || {};
 
   const pres = new pptxgen();
   pres.defineLayout({ name: "W169", width: PW, height: PH });
@@ -44,167 +39,469 @@ function createDeck(themeName, meta = {}) {
   if (meta.title) pres.title = meta.title;
   const FOOTER = meta.footer || "";
 
-  // 当前页调色板:hero 页用深/品牌底,内容页用浅底
-  // ac  = 文字强调色(必须满足对比度)  acF = 装饰强调色(色条/节点/按钮,可用高饱和色)
   const pal = hero => hero
     ? { bg: C.hero, t1: C.heroT1, t2: C.heroT2, t3: C.heroT2,
         ac: C.heroAccent, acF: C.heroAccentFill || C.heroAccent, line: C.heroLine }
-    : { bg: C.bg,   t1: C.t1,    t2: C.t2,    t3: C.t3,
+    : { bg: C.bg, t1: C.t1, t2: C.t2, t3: C.t3,
         ac: C.accent, acF: C.accentFill || C.accent, line: C.border };
 
-  // ---------- 公用零件 ----------
+  const sc = n => Math.round(n * (L.scale || 1) * 10) / 10;
+  const TRI = pres.shapes.TRIANGLE || pres.shapes.ISOCELES_TRIANGLE || "triangle";
+
+  // ---------- 绘制原语 ----------
+  const txt = (s, t, o) => s.addText(t, {
+    x: o.x, y: o.y, w: o.w, h: o.h,
+    fontFace: o.font || F.body, fontSize: o.fs || sc(14), color: o.color,
+    bold: o.bold, italic: o.italic, align: o.align, valign: o.valign,
+    charSpacing: o.ls, lineSpacing: o.lh, rotate: o.rotate,
+    margin: o.margin !== undefined ? o.margin : 0,
+  });
+  const box = (s, o) => s.addShape(o.round ? pres.shapes.ROUNDED_RECTANGLE : pres.shapes.RECTANGLE, {
+    x: o.x, y: o.y, w: o.w, h: o.h,
+    rectRadius: o.round ? (o.r != null ? o.r : (R || 0.06)) : undefined,
+    fill: o.fill ? { color: o.fill, transparency: o.alpha } : { type: "none" },
+    line: o.line ? { color: o.line, width: o.lw || 1, dashType: o.dash } : { type: "none" },
+    rotate: o.rotate,
+  });
+  const oval = (s, o) => s.addShape(pres.shapes.OVAL, {
+    x: o.x, y: o.y, w: o.w, h: o.h,
+    fill: o.fill ? { color: o.fill } : { type: "none" },
+    line: o.line ? { color: o.line, width: o.lw || 1 } : { type: "none" },
+  });
+  const tri = (s, o) => s.addShape(TRI, {
+    x: o.x, y: o.y, w: o.w, h: o.h,
+    fill: o.fill ? { color: o.fill } : { type: "none" }, line: { type: "none" }, rotate: o.rotate,
+  });
+  const lineH = (s, x, y, w, color, pt = 1, dash) => s.addShape(pres.shapes.LINE, { x, y, w, h: 0, line: { color, width: pt, dashType: dash } });
+  const lineV = (s, x, y, h, color, pt = 1, dash) => s.addShape(pres.shapes.LINE, { x, y, w: 0, h, line: { color, width: pt, dashType: dash } });
+
+  const runs = (title, p) => typeof title === "string"
+    ? [{ text: title, options: { color: p.t1 } }]
+    : (title || []).map(r => ({ text: r[0], options: { color: r[1] ? p.ac : p.t1, breakLine: r[2] === true } }));
+
   function newSlide(hero) {
     const s = pres.addSlide();
     s.background = { color: pal(hero).bg };
     return s;
   }
-  function kicker(s, p, text, y = 0.6) {
-    if (!text) return;
-    s.addText(text.toUpperCase() === text ? text : text, {
-      x: MX, y, w: CW, h: 0.35, fontFace: F.mono, fontSize: 12.5,
-      charSpacing: 2.5, color: p.ac, margin: 0,
-    });
-  }
-  function header(s, p, o, tsize = 34) {
-    kicker(s, p, o.kicker);
-    if (o.title != null) {
-      const runs = toRuns(o.title, p);
-      s.addText(runs, { x: MX - 0.02, y: 0.98, w: CW, h: 0.95, fontFace: F.title,
-        fontSize: o.titleSize || tsize, bold: true, color: p.t1, margin: 0 });
+
+  // ---------- 编号形态(num DNA) ----------
+  // 在 (x,y) 处画第 i 项(从 0 起)的编号,占位约 size×size。返回横向占用宽度。
+  function drawIndex(s, p, i, x, y, size = 0.44, given) {
+    const n = given != null ? String(given) : String(i + 1).padStart(2, "0");
+    const fsz = size * 46;
+    switch (L.num) {
+      case "none": return 0;
+      case "dot":
+        txt(s, (i + 1) + ".", { x, y, w: size + 0.1, h: size, font: F.num, fs: fsz * 0.8, bold: true, color: p.t2, valign: "middle" });
+        return size + 0.12;
+      case "serif":
+        txt(s, n, { x, y, w: size + 0.25, h: size, font: F.num, fs: fsz, bold: true, color: p.ac, valign: "middle" });
+        return size + 0.3;
+      case "roman":
+        txt(s, ROMAN[i] || n, { x, y, w: size + 0.3, h: size, font: F.num, fs: fsz * 0.72, italic: true, color: p.t3, valign: "middle" });
+        return size + 0.32;
+      case "mono":
+        txt(s, n, { x, y, w: size + 0.2, h: size, font: F.mono, fs: fsz * 0.78, color: p.ac, valign: "middle" });
+        return size + 0.24;
+      case "bracket":
+        txt(s, "[" + (i + 1) + "]", { x, y, w: size + 0.3, h: size, font: F.mono, fs: fsz * 0.7, color: p.ac, valign: "middle" });
+        return size + 0.34;
+      case "circle":
+        oval(s, { x, y: y + 0.02, w: size, h: size, line: p.ac, lw: 1.4 });
+        txt(s, String(i + 1), { x, y: y + 0.02, w: size, h: size, font: F.num, fs: fsz * 0.55, bold: true, color: p.ac, align: "center", valign: "middle" });
+        return size + 0.18;
+      case "sticker":
+        box(s, { x: x + 0.05, y: y + 0.07, w: size, h: size, fill: "0A0A0A" });
+        box(s, { x, y: y + 0.02, w: size, h: size, fill: p.acF, line: "0A0A0A", lw: 1.5 });
+        txt(s, String(i + 1), { x, y: y + 0.02, w: size, h: size, fs: fsz * 0.6, bold: true, color: "0A0A0A", align: "center", valign: "middle" });
+        return size + 0.22;
+      case "big":
+        txt(s, n, { x, y: y - 0.08, w: size + 0.5, h: size + 0.2, font: F.num, fs: fsz * 1.35, bold: true, color: p.acF, valign: "middle" });
+        return size + 0.55;
+      case "geo": {
+        const kind = i % 3, cols = [C.accentFill || C.accent, C.accent2, C.warn];
+        if (kind === 0) oval(s, { x, y: y + 0.02, w: size, h: size, fill: cols[0] });
+        else if (kind === 1) box(s, { x, y: y + 0.02, w: size, h: size, fill: cols[1] });
+        else tri(s, { x, y: y + 0.02, w: size, h: size, fill: cols[2] });
+        txt(s, String(i + 1), { x, y: y + (kind === 2 ? 0.1 : 0.02), w: size, h: size, fs: fsz * 0.5, bold: true, color: kind === 2 ? "1A1A1A" : "FFFFFF", align: "center", valign: "middle" });
+        return size + 0.2;
+      }
+      case "tabular":
+        txt(s, n, { x, y, w: size + 0.15, h: size, font: F.num, fs: fsz * 0.75, bold: true, color: p.t3, valign: "middle" });
+        return size + 0.2;
+      default: // plain
+        txt(s, n, { x, y, w: size + 0.15, h: size, font: F.num, fs: fsz * 0.85, bold: true, color: p.ac, valign: "middle" });
+        return size + 0.22;
     }
   }
-  function footer(s, p, page) {
-    if (FOOTER) s.addText(FOOTER, { x: MX, y: PH - 0.5, w: 7, h: 0.3,
-      fontFace: F.mono, fontSize: 10.5, charSpacing: 1, color: p.t3 });
-    if (page != null) s.addText(String(page), { x: PW - 1.5, y: PH - 0.5, w: 0.65, h: 0.3,
-      fontFace: F.mono, fontSize: 10.5, color: p.t3, align: "right" });
+
+  // ---------- 条目容器(list DNA → 容器语言) ----------
+  const CONTAINER_OF = {
+    cards: "softCard", pillCards: "pillCard", shadowCards: "shadowBox",
+    hairline: "ruleTop", leader: "ruleTop", circledHair: "ruleTop", dashedDots: "dashTop",
+    circledDashed: "dashTop", rightNums: "ruleTop", paragraphs: "none",
+    bareRows: "none", airyRows: "none", centerLines: "none", centerThin: "none",
+    dataRows: "panel", lineNumbers: "panel", outputRows: "none", colorTicks: "panel",
+    squareGrid: "panel", bigDots: "panel", stepTimeline: "panel", geoShapes: "panel",
+  };
+  function itemBox(s, p, x, y, w, h, i) {
+    switch (CONTAINER_OF[L.list] || "softCard") {
+      case "softCard": box(s, { x, y, w, h, fill: C.surface, round: R > 0 }); break;
+      case "pillCard": box(s, { x, y, w, h, fill: i % 2 ? C.bgSoft : C.surface, round: true, r: Math.min(0.16, h / 3) }); break;
+      case "shadowBox":
+        box(s, { x: x + 0.09, y: y + 0.09, w, h, fill: "0A0A0A" });
+        box(s, { x, y, w, h, fill: C.bg, line: "0A0A0A", lw: 2 }); break;
+      case "ruleTop": lineH(s, x, y, w, p.line, 1.4); break;
+      case "dashTop": lineH(s, x, y, w, p.t3, 1.2, "dash"); break;
+      case "panel": box(s, { x, y, w, h, fill: C.surface }); break;
+      case "none": default: break;
+    }
   }
-  function accentBar(s, x, y, w, h, color) {
-    s.addShape(pres.shapes.RECTANGLE, { x, y, w, h, fill: { color } });
-  }
-  function card(s, x, y, w, h, opts = {}) {
-    const lc = opts.lineColor || C.cardLine; // cardLine 令牌:新粗野等描边风格用
-    s.addShape(R > 0 ? pres.shapes.ROUNDED_RECTANGLE : pres.shapes.RECTANGLE, {
-      x, y, w, h, rectRadius: R > 0 ? R : undefined,
-      fill: { color: opts.fill || C.surface },
-      line: lc ? { color: lc, width: opts.lineWidth || C.cardLineW || 1 } : { type: "none" },
+
+  // ---------- 页眉(header DNA)fn(s,p,o) → contentTop ----------
+  const HEADERS = {
+    thickThin(s, p, o) {
+      if (o.kicker) txt(s, o.kicker, { x: MX, y: 0.5, w: CW, h: 0.32, font: F.num, fs: sc(12), ls: 3, color: p.t3 });
+      txt(s, runs(o.title, p), { x: MX, y: 0.9, w: CW, h: 0.85, font: F.title, fs: o.titleSize || sc(32), bold: true });
+      lineH(s, MX, 1.88, CW, p.ac, 2.4); lineH(s, MX, 1.95, CW, p.line, 0.8);
+      return 2.3;
+    },
+    blackTick(s, p, o) {
+      box(s, { x: MX, y: 0.6, w: 0.55, h: 0.09, fill: p.t1 });
+      if (o.kicker) txt(s, o.kicker, { x: PW - 5.2, y: 0.55, w: 4.35, h: 0.3, font: F.mono, fs: sc(10.5), ls: 2, color: p.t3, align: "right" });
+      txt(s, runs(o.title, p), { x: MX, y: 0.95, w: CW, h: 0.95, font: F.title, fs: o.titleSize || sc(36), bold: true });
+      return 2.3;
+    },
+    sidebar(s, p, o) {
+      box(s, { x: 0, y: 0, w: 0.3, h: PH, fill: p.acF });
+      if (o.kicker) txt(s, o.kicker, { x: MX, y: 0.58, w: CW, h: 0.32, font: F.mono, fs: sc(12), ls: 2.5, color: p.ac });
+      txt(s, runs(o.title, p), { x: MX, y: 0.98, w: CW, h: 0.9, font: F.title, fs: o.titleSize || sc(33), bold: true });
+      return 2.2;
+    },
+    topbar(s, p, o) {
+      if (o.kicker) txt(s, o.kicker, { x: MX, y: 0.26, w: 9, h: 0.3, font: F.body, fs: sc(11), ls: 2, color: p.t3 });
+      if (o.page != null) txt(s, String(o.page), { x: PW - 1.6, y: 0.26, w: 0.75, h: 0.3, font: F.num, fs: sc(11), color: p.t3, align: "right" });
+      lineH(s, MX, 0.62, CW, p.t1, 1.1);
+      txt(s, runs(o.title, p), { x: MX, y: 0.82, w: CW, h: 1.3, font: F.title, fs: o.titleSize || sc(25), bold: true, lh: sc(25) * 1.25 });
+      return 2.35;
+    },
+    pill(s, p, o) {
+      if (o.kicker) {
+        const w = Math.max(1.4, o.kicker.length * 0.16 + 0.5);
+        box(s, { x: MX, y: 0.52, w, h: 0.38, fill: C.surface, round: true, r: 0.19 });
+        txt(s, o.kicker, { x: MX, y: 0.52, w, h: 0.38, font: F.mono, fs: sc(10.5), ls: 1.5, color: p.ac, align: "center", valign: "middle" });
+      }
+      txt(s, runs(o.title, p), { x: MX, y: 1.05, w: CW, h: 0.9, font: F.title, fs: o.titleSize || sc(32), bold: true });
+      return 2.25;
+    },
+    filters(s, p, o) {
+      txt(s, runs(o.title, p), { x: MX, y: 0.55, w: 8.2, h: 0.75, font: F.title, fs: o.titleSize || sc(28), bold: true });
+      const tags = (o.kicker || "").split("·").map(t0 => t0.trim()).filter(Boolean).slice(0, 3);
+      let tx = PW - MX;
+      tags.reverse().forEach(tag => {
+        const w = Math.max(1.0, tag.length * 0.16 + 0.42); tx -= w + 0.18;
+        box(s, { x: tx, y: 0.6, w, h: 0.36, fill: C.surface, line: p.line, lw: 1, round: true, r: 0.18 });
+        txt(s, tag, { x: tx, y: 0.6, w, h: 0.36, font: F.mono, fs: sc(9.5), color: p.t2, align: "center", valign: "middle" });
+      });
+      lineH(s, MX, 1.35, CW, p.line, 1);
+      return 1.75;
+    },
+    chrome(s, p, o) {
+      txt(s, o.kicker || "", { x: MX, y: 0.32, w: 7, h: 0.3, font: F.mono, fs: sc(10), ls: 2.5, color: p.t2 });
+      txt(s, (FOOTER || meta.title || ""), { x: PW - 5.5, y: 0.32, w: 5.5 - MX, h: 0.3, font: F.mono, fs: sc(10), ls: 2, color: p.t3, align: "right" });
+      lineH(s, MX, 0.7, CW, p.t1, 1);
+      txt(s, runs(o.title, p), { x: MX, y: 0.92, w: CW, h: 1.0, font: F.title, fs: o.titleSize || sc(34), bold: true });
+      return 2.35;
+    },
+    rightAlign(s, p, o) {
+      if (o.kicker) txt(s, o.kicker, { x: MX, y: 0.6, w: 5, h: 0.3, font: F.mono, fs: sc(10.5), ls: 2.5, color: p.t3 });
+      txt(s, runs(o.title, p), { x: MX, y: 0.95, w: CW, h: 0.95, font: F.title, fs: o.titleSize || sc(33), bold: true, align: "right" });
+      lineH(s, PW - MX - 3.2, 2.02, 3.2, p.ac, 2);
+      return 2.35;
+    },
+    tape(s, p, o) {
+      if (o.kicker) {
+        const w = Math.max(2, o.kicker.length * 0.2 + 0.7);
+        box(s, { x: MX - 0.12, y: 0.5, w, h: 0.44, fill: C.accent2, alpha: 62, rotate: -2 });
+        txt(s, o.kicker, { x: MX, y: 0.52, w, h: 0.4, font: F.mono, fs: sc(11), ls: 2, color: p.t1, valign: "middle" });
+      }
+      txt(s, runs(o.title, p), { x: MX, y: 1.08, w: CW, h: 0.9, font: F.title, fs: o.titleSize || sc(32), bold: true });
+      return 2.3;
+    },
+    thinRoman(s, p, o) {
+      txt(s, ROMAN[(parseInt(o.page, 10) || 1) - 1] || "", { x: PW - 2.1, y: 0.5, w: 1.25, h: 0.5, font: F.num, fs: sc(20), italic: true, color: p.t3, align: "right" });
+      txt(s, runs(o.title, p), { x: MX, y: 0.72, w: CW - 1.6, h: 1.1, font: F.title, fs: o.titleSize || sc(38), bold: false });
+      lineH(s, MX, 2.05, CW, p.t1, 0.8);
+      if (o.kicker) txt(s, o.kicker, { x: MX, y: 2.14, w: CW, h: 0.3, font: F.mono, fs: sc(9.5), ls: 3, color: p.t3 });
+      return 2.6;
+    },
+    ghostNum(s, p, o) {
+      txt(s, String(o.page || "01"), { x: MX - 0.15, y: 0.05, w: 4.5, h: 2.2, font: F.num, fs: sc(105), bold: true, color: "E4E4E0" });
+      if (o.kicker) txt(s, o.kicker, { x: MX, y: 0.62, w: CW, h: 0.32, font: F.mono, fs: sc(11.5), ls: 3, color: p.ac });
+      txt(s, runs(o.title, p), { x: MX, y: 1.1, w: CW, h: 1.0, font: F.title, fs: o.titleSize || sc(37), bold: true });
+      return 2.45;
+    },
+    blockTag(s, p, o) {
+      box(s, { x: MX, y: 1.02, w: 0.36, h: 0.36, fill: p.acF });
+      if (o.kicker) txt(s, o.kicker, { x: MX, y: 0.55, w: CW, h: 0.3, font: F.mono, fs: sc(11), ls: 2.5, color: p.t2 });
+      txt(s, runs(o.title, p), { x: MX + 0.55, y: 0.92, w: CW - 0.55, h: 0.85, font: F.title, fs: o.titleSize || sc(33), bold: true });
+      return 2.3;
+    },
+    stepBand(s, p, o) {
+      box(s, { x: 0, y: 0, w: PW, h: 0.14, fill: p.acF });
+      if (o.kicker) txt(s, o.kicker, { x: MX, y: 0.5, w: CW, h: 0.32, font: F.mono, fs: sc(12), ls: 3, color: p.ac, bold: true });
+      txt(s, runs(o.title, p), { x: MX, y: 0.95, w: CW, h: 0.9, font: F.title, fs: o.titleSize || sc(34), bold: true });
+      return 2.3;
+    },
+    lineNo(s, p, o) {
+      txt(s, String(o.page || "00"), { x: 0.18, y: 0.62, w: 0.5, h: 0.32, font: F.mono, fs: sc(11), color: p.t3, align: "right" });
+      if (o.kicker) txt(s, "// " + o.kicker, { x: MX, y: 0.6, w: CW, h: 0.32, font: F.mono, fs: sc(12), ls: 1.5, color: C.accent2 });
+      txt(s, runs(o.title, p), { x: MX, y: 1.0, w: CW, h: 0.9, font: F.title, fs: o.titleSize || sc(33), bold: true });
+      return 2.25;
+    },
+    tridot(s, p, o) {
+      [C.accent, C.accent2, C.good].forEach((c0, i) => oval(s, { x: MX + i * 0.24, y: 0.64, w: 0.14, h: 0.14, fill: c0 }));
+      if (o.kicker) txt(s, o.kicker, { x: MX + 0.85, y: 0.56, w: CW - 0.85, h: 0.3, font: F.mono, fs: sc(11), ls: 2, color: p.t3 });
+      txt(s, runs(o.title, p), { x: MX, y: 1.0, w: CW, h: 0.9, font: F.title, fs: o.titleSize || sc(33), bold: true });
+      return 2.25;
+    },
+    prompt(s, p, o) {
+      if (o.kicker) txt(s, [{ text: "$ ", options: { color: p.ac, bold: true } }, { text: o.kicker, options: { color: p.t2 } }],
+        { x: MX, y: 0.52, w: CW, h: 0.32, font: F.mono, fs: sc(12.5) });
+      txt(s, [{ text: "> ", options: { color: p.ac } }].concat(runs(o.title, p)),
+        { x: MX, y: 0.95, w: CW, h: 0.85, font: F.title, fs: o.titleSize || sc(28), bold: true });
+      box(s, { x: MX + 0.02, y: 1.85, w: 0.28, h: 0.1, fill: p.ac });
+      return 2.35;
+    },
+    lecture(s, p, o) {
+      if (o.kicker) {
+        const w = Math.max(1.5, o.kicker.length * 0.2 + 0.55);
+        box(s, { x: MX, y: 0.5, w, h: 0.42, line: p.ac, lw: 1.4 });
+        txt(s, o.kicker, { x: MX, y: 0.5, w, h: 0.42, font: F.title, fs: sc(11.5), bold: true, color: p.ac, align: "center", valign: "middle" });
+      }
+      txt(s, runs(o.title, p), { x: MX, y: 1.08, w: CW, h: 0.9, font: F.title, fs: o.titleSize || sc(32), bold: true });
+      lineH(s, MX, 2.12, CW, p.t3, 1.1, "dash");
+      return 2.4;
+    },
+    dotTrail(s, p, o) {
+      [0.16, 0.12, 0.09, 0.12, 0.16].forEach((d, i) => oval(s, { x: MX + i * 0.28, y: 0.66 - d / 2 + 0.08, w: d, h: d, fill: i % 2 ? C.accent2 : (C.accentFill || C.accent) }));
+      if (o.kicker) txt(s, o.kicker, { x: MX + 1.7, y: 0.55, w: CW - 1.7, h: 0.3, fs: sc(11), ls: 1.5, color: p.t3 });
+      txt(s, runs(o.title, p), { x: MX, y: 1.0, w: CW, h: 0.9, font: F.title, fs: o.titleSize || sc(32), bold: true });
+      return 2.25;
+    },
+    boxed(s, p, o) {
+      if (o.kicker) {
+        const w = Math.max(1.6, o.kicker.length * 0.18 + 0.5);
+        box(s, { x: MX + 0.06, y: 0.48, w, h: 0.36, fill: "0A0A0A" });
+        box(s, { x: MX, y: 0.42, w, h: 0.36, fill: p.acF, line: "0A0A0A", lw: 1.6 });
+        txt(s, o.kicker, { x: MX, y: 0.42, w, h: 0.36, font: F.mono, fs: sc(10), bold: true, color: "0A0A0A", align: "center", valign: "middle" });
+      }
+      box(s, { x: MX + 0.1, y: 1.15, w: CW, h: 0.92, fill: "0A0A0A" });
+      box(s, { x: MX, y: 1.05, w: CW, h: 0.92, fill: C.bg, line: "0A0A0A", lw: 2.2 });
+      txt(s, runs(o.title, p), { x: MX + 0.3, y: 1.05, w: CW - 0.6, h: 0.92, font: F.title, fs: o.titleSize || sc(29), bold: true, valign: "middle" });
+      return 2.55;
+    },
+    geoLead(s, p, o) {
+      const pg = parseInt(o.page, 10) || 1, kind = pg % 3, cols = [C.accentFill || C.accent, C.accent2, C.warn];
+      if (kind === 0) oval(s, { x: MX, y: 0.92, w: 0.55, h: 0.55, fill: cols[0] });
+      else if (kind === 1) box(s, { x: MX, y: 0.92, w: 0.55, h: 0.55, fill: cols[1] });
+      else tri(s, { x: MX, y: 0.92, w: 0.58, h: 0.55, fill: cols[2] });
+      if (o.kicker) txt(s, o.kicker, { x: MX, y: 0.5, w: CW, h: 0.3, font: F.mono, fs: sc(10.5), ls: 2.5, color: p.t2 });
+      txt(s, runs(o.title, p), { x: MX + 0.8, y: 0.95, w: CW - 0.8, h: 0.85, font: F.title, fs: o.titleSize || sc(32), bold: true });
+      return 2.35;
+    },
+    centerNone(s, p, o) {
+      if (o.kicker) txt(s, o.kicker, { x: MX, y: 0.85, w: CW, h: 0.35, fs: sc(12), ls: 3, color: p.t3, align: "center" });
+      txt(s, runs(o.title, p), { x: MX, y: 1.3, w: CW, h: 1.0, font: F.title, fs: o.titleSize || sc(34), bold: true, align: "center" });
+      return 2.85;
+    },
+  };
+
+  // ---------- 页脚(footer DNA) ----------
+  const FOOTERS = {
+    minimal(s, p, page) {
+      if (FOOTER) txt(s, FOOTER, { x: MX, y: PH - 0.5, w: 7, h: 0.3, font: F.mono, fs: sc(10.5), ls: 1, color: p.t3 });
+      if (page != null) txt(s, String(page), { x: PW - 1.5, y: PH - 0.5, w: 0.65, h: 0.3, font: F.mono, fs: sc(10.5), color: p.t3, align: "right" });
+    },
+    pageOnly(s, p, page) {
+      if (page != null) txt(s, String(page), { x: PW - 1.4, y: PH - 0.52, w: 0.55, h: 0.3, font: F.num, fs: sc(11), color: p.t3, align: "right" });
+    },
+    centerPage(s, p, page) {
+      if (page != null) txt(s, String(page), { x: PW / 2 - 1, y: PH - 0.52, w: 2, h: 0.3, font: F.num, fs: sc(11), color: p.t3, align: "center" });
+    },
+    source(s, p, page) {
+      txt(s, "资料来源: " + (meta.source || FOOTER || "内部分析"), { x: MX, y: PH - 0.48, w: 9, h: 0.3, fs: sc(9.5), color: p.t3 });
+    },
+    folio(s, p, page) {
+      if (page != null) txt(s, "— " + page + " —", { x: PW / 2 - 1.2, y: PH - 0.55, w: 2.4, h: 0.32, font: F.num, fs: sc(11), italic: true, color: p.t2, align: "center" });
+    },
+    folioRight(s, p, page) {
+      if (page != null) txt(s, page + " ·", { x: PW - 2, y: PH - 0.55, w: 1.15, h: 0.32, font: F.num, fs: sc(11.5), italic: true, color: p.t2, align: "right" });
+      if (FOOTER) txt(s, FOOTER, { x: MX, y: PH - 0.52, w: 6, h: 0.3, font: F.mono, fs: sc(9), ls: 1.5, color: p.t3 });
+    },
+    statusbar(s, p, page) {
+      box(s, { x: 0, y: PH - 0.42, w: PW, h: 0.42, fill: C.surface });
+      txt(s, FOOTER || "数据看板", { x: MX, y: PH - 0.42, w: 8, h: 0.42, font: F.mono, fs: sc(9.5), color: p.t2, valign: "middle" });
+      if (page != null) txt(s, "第 " + page + " 页", { x: PW - 2.2, y: PH - 0.42, w: 1.35, h: 0.42, font: F.mono, fs: sc(9.5), color: p.t2, align: "right", valign: "middle" });
+    },
+    swissBlock(s, p, page) {
+      if (page != null) {
+        box(s, { x: PW - 1.05, y: PH - 0.75, w: 0.5, h: 0.44, fill: C.t1 });
+        txt(s, String(page), { x: PW - 1.05, y: PH - 0.75, w: 0.5, h: 0.44, font: F.num, fs: sc(12), bold: true, color: C.bg, align: "center", valign: "middle" });
+      }
+      if (FOOTER) txt(s, FOOTER, { x: MX, y: PH - 0.52, w: 7, h: 0.3, font: F.mono, fs: sc(9.5), ls: 1.5, color: p.t3 });
+    },
+    accentRule(s, p, page) {
+      box(s, { x: MX, y: PH - 0.5, w: 1.3, h: 0.09, fill: p.acF });
+      if (page != null) txt(s, String(page), { x: PW - 1.5, y: PH - 0.55, w: 0.65, h: 0.3, font: F.num, fs: sc(11), bold: true, color: p.t1, align: "right" });
+    },
+    cornerBand(s, p, page) {
+      box(s, { x: PW - 1.7, y: PH - 0.38, w: 1.7, h: 0.38, fill: p.acF });
+      if (page != null) txt(s, String(page), { x: PW - 1.7, y: PH - 0.38, w: 1.55, h: 0.38, font: F.num, fs: sc(11), bold: true, color: "0A0A0A", align: "right", valign: "middle" });
+    },
+    statusline(s, p, page) {
+      box(s, { x: 0, y: PH - 0.36, w: PW, h: 0.36, fill: C.bgSoft });
+      txt(s, "◆ " + (FOOTER || "deck"), { x: MX, y: PH - 0.36, w: 7, h: 0.36, font: F.mono, fs: sc(9.5), color: C.accent2, valign: "middle" });
+      if (page != null) txt(s, "Ln " + page, { x: PW - 1.9, y: PH - 0.36, w: 1.05, h: 0.36, font: F.mono, fs: sc(9.5), color: p.t3, align: "right", valign: "middle" });
+    },
+    tridotPage(s, p, page) {
+      [C.accent, C.accent2, C.good].forEach((c0, i) => oval(s, { x: MX + i * 0.2, y: PH - 0.44, w: 0.1, h: 0.1, fill: c0 }));
+      if (page != null) txt(s, String(page), { x: PW - 1.5, y: PH - 0.52, w: 0.65, h: 0.3, font: F.num, fs: sc(10.5), color: p.t3, align: "right" });
+    },
+    promptline(s, p, page) {
+      txt(s, [{ text: (FOOTER || "user@deck") + ":~$ ", options: { color: p.t3 } }, { text: "▍", options: { color: p.ac } }],
+        { x: MX, y: PH - 0.46, w: 8, h: 0.3, font: F.mono, fs: sc(10) });
+      if (page != null) txt(s, String(page), { x: PW - 1.5, y: PH - 0.46, w: 0.65, h: 0.3, font: F.mono, fs: sc(10), color: p.t3, align: "right" });
+    },
+    roman(s, p, page) {
+      const n = parseInt(page, 10);
+      if (page != null) txt(s, n ? (ROMAN[n - 1] || page) : page, { x: PW - 2, y: PH - 0.55, w: 1.15, h: 0.32, font: F.num, fs: sc(12), italic: true, color: p.t2, align: "right" });
+    },
+    dotPage(s, p, page) {
+      oval(s, { x: PW - 1.7, y: PH - 0.46, w: 0.12, h: 0.12, fill: C.accentFill || C.accent });
+      if (page != null) txt(s, String(page), { x: PW - 1.5, y: PH - 0.52, w: 0.65, h: 0.3, font: F.num, fs: sc(10.5), color: p.t3, align: "right" });
+    },
+    boxedPage(s, p, page) {
+      if (page != null) {
+        box(s, { x: PW - 1.12, y: PH - 0.66, w: 0.52, h: 0.4, line: "0A0A0A", lw: 1.6, fill: C.bg });
+        txt(s, String(page), { x: PW - 1.12, y: PH - 0.66, w: 0.52, h: 0.4, font: F.num, fs: sc(11), bold: true, color: p.t1, align: "center", valign: "middle" });
+      }
+    },
+    geoPage(s, p, page) {
+      oval(s, { x: MX, y: PH - 0.44, w: 0.12, h: 0.12, fill: C.accentFill || C.accent });
+      box(s, { x: MX + 0.2, y: PH - 0.44, w: 0.12, h: 0.12, fill: C.accent2 });
+      tri(s, { x: MX + 0.4, y: PH - 0.44, w: 0.13, h: 0.12, fill: C.warn });
+      if (page != null) txt(s, String(page), { x: PW - 1.5, y: PH - 0.52, w: 0.65, h: 0.3, font: F.num, fs: sc(10.5), color: p.t3, align: "right" });
+    },
+    handout(s, p, page) {
+      txt(s, (FOOTER ? FOOTER + " · " : "") + "讲义" + (page != null ? " · 第 " + page + " 页" : ""),
+        { x: PW / 2 - 3, y: PH - 0.5, w: 6, h: 0.3, fs: sc(9.5), color: p.t3, align: "center" });
+    },
+    chapterLeft(s, p, page) {
+      lineV(s, MX, PH - 0.62, 0.34, p.ac, 2);
+      txt(s, FOOTER || "", { x: MX + 0.15, y: PH - 0.55, w: 6, h: 0.3, fs: sc(9.5), color: p.t3 });
+      if (page != null) txt(s, String(page), { x: PW - 1.5, y: PH - 0.52, w: 0.65, h: 0.3, font: F.num, fs: sc(10.5), color: p.t3, align: "right" });
+    },
+    dotFolio(s, p, page) {
+      if (page != null) txt(s, "· " + page + " ·", { x: PW / 2 - 1, y: PH - 0.55, w: 2, h: 0.3, font: F.num, fs: sc(11), color: p.t2, align: "center" });
+    },
+    none() {},
+  };
+
+  const header = (s, p, o) => (HEADERS[L.header] || HEADERS.blackTick)(s, p, o);
+  const footer = (s, p, page) => (FOOTERS[L.footer] || FOOTERS.minimal)(s, p, page);
+
+  // ---------- contentRows 的列表渲染(list DNA) ----------
+  function renderRows(s, p, rows, top, bottom) {
+    const style = L.list, avail = bottom - top;
+    const n = rows.length || 1, gap = ["bareRows", "airyRows", "centerLines", "centerThin", "paragraphs"].includes(style) ? 0.12 : 0.18;
+    const rh = Math.min(style === "airyRows" ? 0.95 : 1.05, (avail - gap * (n - 1)) / n);
+    rows.forEach((r, i) => {
+      const y = top + i * (rh + gap);
+      if (style === "centerLines" || style === "centerThin") {
+        txt(s, r[1], { x: MX, y, w: CW, h: rh * 0.55, fs: sc(style === "centerThin" ? 24 : 22), font: F.title, bold: style !== "centerThin", color: p.t1, align: "center", valign: "middle" });
+        if (r[2]) txt(s, r[2], { x: MX + 1, y: y + rh * 0.55, w: CW - 2, h: rh * 0.45, fs: sc(12), color: p.t2, align: "center" });
+        return;
+      }
+      if (style === "paragraphs") {
+        txt(s, [{ text: r[1] + "  ", options: { bold: true, color: p.t1, fontFace: F.title } },
+                { text: "—— " + (r[2] || ""), options: { color: p.t2 } }],
+          { x: MX + 0.2, y, w: CW - 0.4, h: rh, fs: sc(15), valign: "middle", lh: sc(15) * 1.5 });
+        if (i < n - 1) txt(s, "·", { x: PW / 2 - 0.2, y: y + rh - 0.04, w: 0.4, h: 0.22, fs: sc(12), color: p.t3, align: "center" });
+        return;
+      }
+      if (style === "stepTimeline") {
+        const bx = MX + 0.1;
+        if (i < n - 1) lineV(s, bx + 0.3, y + rh / 2 + 0.32, gap + rh - 0.62 + rh / 2, p.line, 1.5);
+        box(s, { x: bx, y: y + rh / 2 - 0.3, w: 0.6, h: 0.6, fill: p.acF });
+        txt(s, String(r[0] != null ? r[0] : i + 1), { x: bx, y: y + rh / 2 - 0.3, w: 0.6, h: 0.6, font: F.num, fs: sc(18), bold: true, color: "0A0A0A", align: "center", valign: "middle" });
+        txt(s, r[1], { x: bx + 0.85, y, w: 4.2, h: rh, fs: sc(16), bold: true, color: p.t1, valign: "middle" });
+        if (r[2]) txt(s, r[2], { x: bx + 5.2, y, w: CW - 5.5, h: rh, fs: sc(12.5), color: p.t2, valign: "middle" });
+        return;
+      }
+      if (style === "rightNums") {
+        itemBox(s, p, MX, y, CW, rh, i);
+        txt(s, r[1], { x: MX, y, w: CW - 1.4, h: rh * 0.62, fs: sc(16), bold: true, color: p.t1, align: "right", valign: "middle", font: F.title });
+        drawIndex(s, p, i, PW - MX - 0.85, y + rh / 2 - 0.24, 0.48, r[0]);
+        if (r[2]) txt(s, r[2], { x: MX, y: y + rh - 0.36, w: CW - 1.4, h: 0.3, fs: sc(11), color: p.t2, align: "right" });
+        return;
+      }
+      // 常规左编号行
+      itemBox(s, p, MX, y, CW, rh, i);
+      let ix = MX + 0.24;
+      if (style === "lineNumbers") { txt(s, String(i + 1).padStart(2, "0"), { x: MX + 0.18, y, w: 0.5, h: rh, font: F.mono, fs: sc(12), color: p.t3, valign: "middle" }); ix = MX + 0.85; }
+      else if (style === "outputRows") { txt(s, "[" + (i + 1) + "]", { x: MX, y, w: 0.65, h: rh, font: F.mono, fs: sc(13), color: p.ac, valign: "middle" }); ix = MX + 0.8; if (i < n - 1) txt(s, "─".repeat(58), { x: MX, y: y + rh + gap / 2 - 0.1, w: CW, h: 0.18, font: F.mono, fs: sc(8), color: C.border }); }
+      else if (style === "colorTicks") { box(s, { x: MX + 0.16, y: y + rh / 2 - 0.22, w: 0.09, h: 0.44, fill: [C.accent, C.accent2, C.good][i % 3], round: true, r: 0.04 }); ix = MX + 0.5; }
+      else if (style === "squareGrid") { box(s, { x: MX + 0.2, y: y + rh / 2 - 0.11, w: 0.22, h: 0.22, fill: p.acF }); ix = MX + 0.66; }
+      else if (style === "bigDots") { oval(s, { x: MX + 0.16, y: y + rh / 2 - 0.19, w: 0.38, h: 0.38, fill: p.acF }); txt(s, String(i + 1), { x: MX + 0.16, y: y + rh / 2 - 0.19, w: 0.38, h: 0.38, fs: sc(12), bold: true, color: "0A0A0A", align: "center", valign: "middle" }); ix = MX + 0.75; }
+      else { ix = MX + 0.24 + drawIndex(s, p, i, MX + 0.24, y + rh / 2 - 0.24, 0.48, r[0]); }
+      txt(s, r[1], { x: ix + 0.15, y, w: 4.4, h: rh, fs: sc(16), bold: true, color: p.t1, valign: "middle", font: style === "leader" ? F.title : F.body });
+      if (style === "leader") lineH(s, MX + 5.3, y + rh / 2, CW - 5.3 - 4.55, p.t3, 1, "sysDot");
+      if (r[2]) txt(s, r[2], { x: MX + CW - 4.45, y, w: 4.25, h: rh,
+        fs: sc(12.5), color: p.t2, valign: "middle", align: style === "dataRows" ? "right" : "left",
+        font: style === "dataRows" ? F.num : F.body });
     });
   }
-  // title 参数 → pptxgenjs 富文本 runs。接受字符串或 [[text, accent?, break?], ...]
-  function toRuns(title, p) {
-    if (typeof title === "string") return [{ text: title, options: { color: p.t1 } }];
-    return title.map(r => ({ text: r[0], options: { color: r[1] ? p.ac : p.t1, breakLine: r[2] === true } }));
-  }
+
+  // ---------- ctx(传给 deck_styles 的构图工具箱) ----------
+  const ctx = {
+    pres, T, C, F, R, L, meta, themeName, PW, PH, MX, CW, FOOTER,
+    pal, sc, txt, box, oval, tri, lineH, lineV, runs, drawIndex, itemBox, header, footer, newSlide, ROMAN,
+  };
+  const comp = STYLES[themeName] || {};
+  const fb = STYLES.__fallback;
+  const heroFn = name => o => (comp[name] || fb[name])(ctx, o || {});
 
   // ========================================================================
   const S = {};
+  S.cover = heroFn("cover");
+  S.sectionDivider = heroFn("divider");
+  S.statement = heroFn("statement");
+  S.closing = heroFn("closing");
+  S.bigStat = heroFn("bigstat");
 
-  // ---- 版式 1 · cover 封面(hero 底) ----
-  // { kicker, title(runs), titleSize?, subtitle, speaker, tag, notes }
-  S.cover = function (o) {
-    const p = pal(true);
-    const s = newSlide(true);
-    if (o.tag) s.addText(o.tag, { x: PW - 4.8, y: 0.55, w: 3.95, h: 0.35,
-      fontFace: F.mono, fontSize: 10.5, charSpacing: 2, color: p.t2, align: "right" });
-    accentBar(s, MX, 2.95, 0.5, 0.045, p.acF);
-    if (o.kicker) s.addText(o.kicker, { x: MX + 0.62, y: 2.76, w: 8.5, h: 0.4,
-      fontFace: F.mono, fontSize: 13, charSpacing: 3, color: p.ac, margin: 0 });
-    s.addText(o.title ? o.title.map(r => ({ text: r[0], options: { color: r[1] ? p.ac : p.t1, breakLine: r[2] === true } })) : [],
-      { x: MX - 0.03, y: 3.25, w: CW, h: 2.0, fontFace: F.title,
-        fontSize: o.titleSize || 52, bold: true, margin: 0, lineSpacing: (o.titleSize || 52) * 1.12 });
-    if (o.subtitle) s.addText(o.subtitle, { x: MX, y: 5.35, w: 11, h: 0.6,
-      fontFace: F.body, fontSize: 20, color: p.t2 });
-    s.addShape(pres.shapes.LINE, { x: MX, y: 6.62, w: CW, h: 0, line: { color: p.line, width: 1 } });
-    if (o.speaker) s.addText(o.speaker, { x: MX, y: 6.76, w: 7, h: 0.4,
-      fontFace: F.body, fontSize: 14, color: p.t2 });
-    if (meta.slogan) s.addText(meta.slogan, { x: 6.5, y: 6.78, w: PW - 6.5 - MX, h: 0.35,
-      fontFace: F.mono, fontSize: 10.5, color: p.t3, align: "right" });
-    if (o.notes) s.addNotes(o.notes);
-    return s;
-  };
-
-  // ---- 版式 5 · contentRows 编号要点列表(≤5 行) ----
-  // { kicker, title, rows:[[no, head, desc]], footnote, page, notes }
-  S.contentRows = function (o) {
-    const p = pal(false);
-    const s = newSlide(false);
-    header(s, p, o);
-    const rows = o.rows || [];
-    const top = 2.15, avail = PH - top - 0.85;
-    const gap = 0.18, rh = Math.min(1.05, (avail - gap * (rows.length - 1)) / rows.length);
-    rows.forEach((r, i) => {
-      const y = top + i * (rh + gap);
-      card(s, MX, y, CW, rh);
-      accentBar(s, MX, y, 0.05, rh, p.acF);
-      s.addText(String(r[0]), { x: MX + 0.28, y, w: 0.95, h: rh, fontFace: F.num,
-        fontSize: 22, bold: true, color: p.ac, valign: "middle", margin: 0 });
-      s.addText(r[1], { x: MX + 1.3, y, w: 3.9, h: rh, fontFace: F.body,
-        fontSize: 16, bold: true, color: p.t1, valign: "middle", margin: 0 });
-      if (r[2]) s.addText(r[2], { x: MX + 5.35, y, w: CW - 5.55, h: rh, fontFace: F.body,
-        fontSize: 13, color: p.t2, valign: "middle", margin: 0 });
-    });
-    if (o.footnote) s.addText(o.footnote, { x: MX, y: PH - 0.88, w: CW, h: 0.3,
-      fontFace: F.body, fontSize: 12, italic: true, color: p.t3 });
-    footer(s, p, o.page);
-    if (o.notes) s.addNotes(o.notes);
-    return s;
-  };
-
-  // ---- 版式 8 · comparison 对比双面板(Before/After) ----
-  // { kicker, title, left:{tag,head,items[],bad?}, right:{tag,head,items[],good?}, page, notes }
-  S.comparison = function (o) {
-    const p = pal(false);
-    const s = newSlide(false);
-    header(s, p, o);
-    const top = 2.15, h = PH - top - 0.85, w = (CW - 0.4) / 2;
-    [[o.left, MX, o.left && o.left.bad ? C.bad : p.t3],
-     [o.right, MX + w + 0.4, o.right && o.right.good ? C.good : p.ac]].forEach(([side, x, tagColor]) => {
-      if (!side) return;
-      card(s, x, top, w, h);
-      accentBar(s, x, top, w, 0.055, tagColor);
-      if (side.tag) s.addText(side.tag, { x: x + 0.35, y: top + 0.28, w: w - 0.7, h: 0.32,
-        fontFace: F.mono, fontSize: 11.5, charSpacing: 2, color: tagColor, margin: 0 });
-      if (side.head) s.addText(side.head, { x: x + 0.35, y: top + 0.66, w: w - 0.7, h: 0.55,
-        fontFace: F.body, fontSize: 19, bold: true, color: p.t1, margin: 0 });
-      const items = (side.items || []).map((t, i) => ({
-        text: t, options: { bullet: { characterCode: "2013", indent: 14 }, breakLine: true,
-          paraSpaceAfter: 8, color: p.t2 } }));
-      if (items.length) s.addText(items, { x: x + 0.35, y: top + 1.35, w: w - 0.7, h: h - 1.7,
-        fontFace: F.body, fontSize: 13.5, valign: "top", margin: 0 });
-    });
-    footer(s, p, o.page);
-    if (o.notes) s.addNotes(o.notes);
-    return s;
-  };
-
-  // ---- 版式 11 · bigStat 大数字 + 柱状(KPI Tower) ----
-  // { kicker, title, stat:{value, unit, label, sub}, bars:[[label, 0-100, highlight?]], page, notes }
-  S.bigStat = function (o) {
-    const p = pal(false);
-    const s = newSlide(false);
-    header(s, p, o);
-    const top = 2.3;
-    if (o.stat) {
-      const runs = [{ text: String(o.stat.value), options: { color: p.ac } }];
-      if (o.stat.unit) runs.push({ text: " " + o.stat.unit, options: { color: p.ac, fontSize: 28 } });
-      s.addText(runs, { x: MX - 0.05, y: top + 0.35, w: 5.3, h: 1.9, fontFace: F.num,
-        fontSize: 88, bold: true, margin: 0 });
-      if (o.stat.label) s.addText(o.stat.label, { x: MX, y: top + 2.35, w: 5.2, h: 0.5,
-        fontFace: F.body, fontSize: 18, bold: true, color: p.t1, margin: 0 });
-      if (o.stat.sub) s.addText(o.stat.sub, { x: MX, y: top + 2.9, w: 5.2, h: 0.9,
-        fontFace: F.body, fontSize: 13, color: p.t2, margin: 0 });
-    }
-    const bars = o.bars || [];
-    if (bars.length) {
-      const bx = 6.7, bw = PW - MX - bx, floor = PH - 1.35, maxH = floor - top - 0.55;
-      const cw = Math.min(1.15, (bw - 0.3 * (bars.length - 1)) / bars.length);
-      bars.forEach((b, i) => {
-        const x = bx + i * (cw + 0.3);
-        const bh = Math.max(0.15, maxH * (b[1] / 100));
-        s.addShape(pres.shapes.RECTANGLE, { x, y: floor - bh, w: cw, h: bh,
-          fill: { color: b[2] ? p.acF : C.border } });
-        s.addText(b[0], { x: x - 0.15, y: floor + 0.08, w: cw + 0.3, h: 0.55,
-          fontFace: F.body, fontSize: 10.5, color: p.t2, align: "center", margin: 0 });
+  // ---- toc 目录 ----
+  S.toc = function (o) {
+    const p = pal(false), s = newSlide(false);
+    const top = header(s, p, o);
+    const items = o.items || [];
+    if (L.align === "center") {
+      const rh = Math.min(0.72, (PH - top - 0.7) / Math.max(items.length, 1));
+      items.forEach((it, i) => {
+        txt(s, [{ text: String(it[0]) + "   ", options: { color: p.t3, fontFace: F.num } }, { text: it[1], options: { color: p.t1, bold: true } }],
+          { x: MX, y: top + i * rh, w: CW, h: rh, fs: sc(19), align: "center", valign: "middle", font: F.title });
+      });
+    } else {
+      const cols = items.length <= 4 ? 2 : 3, rows0 = Math.ceil(items.length / cols), gap = 0.3;
+      const w = (CW - gap * (cols - 1)) / cols;
+      const h = Math.min(1.7, ((PH - top - 0.75) - gap * (rows0 - 1)) / Math.max(rows0, 1));
+      items.forEach((it, i) => {
+        const x = MX + (i % cols) * (w + gap), y = top + Math.floor(i / cols) * (h + gap);
+        itemBox(s, p, x, y, w, h, i);
+        drawIndex(s, p, i, x + 0.28, y + 0.2, 0.42, it[0]);
+        txt(s, it[1], { x: x + 0.28, y: y + 0.72, w: w - 0.56, h: 0.5, fs: sc(15), bold: true, color: p.t1, font: F.title });
+        if (it[2]) txt(s, it[2], { x: x + 0.28, y: y + 1.18, w: w - 0.56, h: Math.max(h - 1.3, 0.25), fs: sc(11), color: p.t2 });
       });
     }
     footer(s, p, o.page);
@@ -212,95 +509,35 @@ function createDeck(themeName, meta = {}) {
     return s;
   };
 
-  // ---- 版式 2 · toc 目录(2×3 编号卡片) ----
-  // { kicker, title, items:[[no, head, sub?]], page, notes }
-  S.toc = function (o) {
-    const p = pal(false);
-    const s = newSlide(false);
-    header(s, p, o);
-    const items = o.items || [];
-    const cols = items.length <= 4 ? 2 : 3, rows = Math.ceil(items.length / cols);
-    const top = 2.25, gap = 0.3;
-    const w = (CW - gap * (cols - 1)) / cols;
-    const h = Math.min(1.7, ((PH - top - 0.85) - gap * (rows - 1)) / rows);
-    items.forEach((it, i) => {
-      const x = MX + (i % cols) * (w + gap), y = top + Math.floor(i / cols) * (h + gap);
-      card(s, x, y, w, h);
-      s.addText(String(it[0]), { x: x + 0.3, y: y + 0.22, w: 1.2, h: 0.5,
-        fontFace: F.num, fontSize: 20, bold: true, color: p.ac, margin: 0 });
-      s.addText(it[1], { x: x + 0.3, y: y + 0.72, w: w - 0.6, h: 0.5,
-        fontFace: F.body, fontSize: 15.5, bold: true, color: p.t1, margin: 0 });
-      if (it[2]) s.addText(it[2], { x: x + 0.3, y: y + 1.2, w: w - 0.6, h: h - 1.32,
-        fontFace: F.body, fontSize: 11.5, color: p.t2, margin: 0 });
-    });
+  // ---- contentRows 编号要点 ----
+  S.contentRows = function (o) {
+    const p = pal(false), s = newSlide(false);
+    const top = header(s, p, o);
+    renderRows(s, p, o.rows || [], top, PH - (["statusbar", "statusline"].includes(L.footer) ? 0.6 : 0.85));
+    if (o.footnote) txt(s, o.footnote, { x: MX, y: PH - 0.86, w: CW - 2, h: 0.28, fs: sc(11), italic: true, color: p.t3 });
     footer(s, p, o.page);
     if (o.notes) s.addNotes(o.notes);
     return s;
   };
 
-  // ---- 版式 3 · sectionDivider 章节幕封(hero 底) ----
-  // { no:"02", kicker, title(runs), sub, page, notes }
-  S.sectionDivider = function (o) {
-    const p = pal(true);
-    const s = newSlide(true);
-    if (o.no != null) s.addText(String(o.no), { x: MX - 0.06, y: 1.35, w: 5, h: 2.2,
-      fontFace: F.num, fontSize: 120, bold: true, color: p.ac, margin: 0 });
-    accentBar(s, MX, 4.0, 0.5, 0.045, p.acF);
-    if (o.kicker) s.addText(o.kicker, { x: MX + 0.62, y: 3.81, w: 9, h: 0.4,
-      fontFace: F.mono, fontSize: 13, charSpacing: 3, color: p.ac, margin: 0 });
-    s.addText(toRuns(o.title || "", p), { x: MX - 0.03, y: 4.3, w: CW, h: 1.5,
-      fontFace: F.title, fontSize: o.titleSize || 44, bold: true, color: p.t1,
-      margin: 0, lineSpacing: (o.titleSize || 44) * 1.15 });
-    if (o.sub) s.addText(o.sub, { x: MX, y: 5.85, w: 10.5, h: 0.7,
-      fontFace: F.body, fontSize: 16, color: p.t2 });
-    footer(s, p, o.page);
-    if (o.notes) s.addNotes(o.notes);
-    return s;
-  };
-
-  // ---- 版式 4 · statement 金句/大字陈述(hero 底) ----
-  // { kicker, title(runs), sub, quote?:false, page, notes }
-  S.statement = function (o) {
-    const p = pal(true);
-    const s = newSlide(true);
-    kicker(s, p, o.kicker);
-    if (o.quote !== false) s.addText("“", { x: MX - 0.1, y: 1.65, w: 2, h: 1.4,
-      fontFace: F.num, fontSize: 110, bold: true, color: p.ac, margin: 0 });
-    s.addText(toRuns(o.title || "", p), { x: MX, y: o.quote === false ? 2.3 : 2.75, w: CW, h: 2.3,
-      fontFace: F.title, fontSize: o.titleSize || 40, bold: true, color: p.t1,
-      margin: 0, lineSpacing: (o.titleSize || 40) * 1.3 });
-    if (o.sub) {
-      accentBar(s, MX, 5.55, 0.55, 0.04, p.acF);
-      s.addText(o.sub, { x: MX, y: 5.75, w: 11.4, h: 0.6, fontFace: F.body,
-        fontSize: 17, color: p.t2 });
-    }
-    footer(s, p, o.page);
-    if (o.notes) s.addNotes(o.notes);
-    return s;
-  };
-
-  // ---- 版式 6 · twoColumn 双栏(概念 ⟷ 示例) ----
-  // { kicker, title, left/right: { head, body?, items?[], mono? }, page, notes }
+  // ---- twoColumn 双栏 ----
   S.twoColumn = function (o) {
-    const p = pal(false);
-    const s = newSlide(false);
-    header(s, p, o);
-    const top = 2.15, h = PH - top - 0.85, w = (CW - 0.4) / 2;
-    [[o.left, MX], [o.right, MX + w + 0.4]].forEach(([side, x]) => {
+    const p = pal(false), s = newSlide(false);
+    const top = header(s, p, o);
+    const h = PH - top - 0.85, w = (CW - 0.4) / 2;
+    [[o.left, MX], [o.right, MX + w + 0.4]].forEach(([side, x], si) => {
       if (!side) return;
-      card(s, x, top, w, h, side.mono ? { fill: C.t1 } : {});
-      const tc = side.mono ? { t1: C.bg, t2: C.bgSoft } : { t1: p.t1, t2: p.t2 };
-      if (side.head) s.addText(side.head, { x: x + 0.35, y: top + 0.3, w: w - 0.7, h: 0.5,
-        fontFace: F.body, fontSize: 18, bold: true, color: side.mono ? tc.t1 : p.t1, margin: 0 });
-      const bodyY = side.head ? top + 0.95 : top + 0.35;
-      if (side.body) s.addText(side.body, { x: x + 0.35, y: bodyY, w: w - 0.7, h: h - (bodyY - top) - 0.35,
-        fontFace: side.mono ? F.mono : F.body, fontSize: side.mono ? 12 : 13.5,
-        color: tc.t2, valign: "top", margin: 0, lineSpacing: side.mono ? 19 : 22 });
+      if (side.mono) {
+        box(s, { x, y: top, w, h, fill: T.dark ? C.bgSoft : C.t1, round: R > 0, line: T.dark ? C.border : null });
+      } else itemBox(s, p, x, top, w, h, si);
+      const tc = side.mono ? { t1: T.dark ? C.t1 : C.bg, t2: T.dark ? C.t2 : C.bgSoft } : { t1: p.t1, t2: p.t2 };
+      if (side.head) txt(s, side.head, { x: x + 0.35, y: top + 0.28, w: w - 0.7, h: 0.5, fs: sc(17), bold: true, color: tc.t1, font: F.title });
+      const by = side.head ? top + 0.92 : top + 0.32;
+      if (side.body) txt(s, side.body, { x: x + 0.35, y: by, w: w - 0.7, h: h - (by - top) - 0.3,
+        font: side.mono ? F.mono : F.body, fs: sc(side.mono ? 11.5 : 13), color: tc.t2, valign: "top", lh: sc(side.mono ? 11.5 : 13) * 1.6 });
       if (side.items && side.items.length) {
-        const runs = side.items.map(t => ({ text: t, options: {
-          bullet: { characterCode: "2013", indent: 14 }, breakLine: true, paraSpaceAfter: 8, color: tc.t2 } }));
-        s.addText(runs, { x: x + 0.35, y: bodyY, w: w - 0.7, h: h - (bodyY - top) - 0.35,
-          fontFace: F.body, fontSize: 13.5, valign: "top", margin: 0 });
+        const rr = side.items.map(t0 => ({ text: t0, options: { bullet: { characterCode: "2013", indent: 14 }, breakLine: true, paraSpaceAfter: 8, color: tc.t2 } }));
+        s.addText(rr, { x: x + 0.35, y: by, w: w - 0.7, h: h - (by - top) - 0.3, fontFace: F.body, fontSize: sc(13), valign: "top", margin: 0 });
       }
     });
     footer(s, p, o.page);
@@ -308,88 +545,88 @@ function createDeck(themeName, meta = {}) {
     return s;
   };
 
-  // ---- 版式 7 · threeCards 三卡并列 ----
-  // { kicker, title, cards:[{no?, head, desc}], page, notes }
+  // ---- threeCards 卡组 ----
   S.threeCards = function (o) {
-    const p = pal(false);
-    const s = newSlide(false);
-    header(s, p, o);
-    const cards = o.cards || [];
-    const top = 2.25, gap = 0.35, n = Math.max(cards.length, 1);
+    const p = pal(false), s = newSlide(false);
+    const top = header(s, p, o);
+    const cards = o.cards || [], gap = 0.35, n = Math.max(cards.length, 1);
     const w = (CW - gap * (n - 1)) / n, h = PH - top - 0.9;
     cards.forEach((cd, i) => {
       const x = MX + i * (w + gap);
-      card(s, x, top, w, h);
-      accentBar(s, x, top, w, 0.055, p.acF);
-      if (cd.no != null) s.addText(String(cd.no), { x: x + 0.32, y: top + 0.32, w: w - 0.64, h: 0.55,
-        fontFace: F.num, fontSize: 26, bold: true, color: p.ac, margin: 0 });
-      s.addText(cd.head || "", { x: x + 0.32, y: top + (cd.no != null ? 0.95 : 0.35), w: w - 0.64, h: 0.85,
-        fontFace: F.body, fontSize: 17, bold: true, color: p.t1, margin: 0 });
-      if (cd.desc) s.addText(cd.desc, { x: x + 0.32, y: top + (cd.no != null ? 1.85 : 1.25), w: w - 0.64,
-        h: h - (cd.no != null ? 2.2 : 1.6),
-        fontFace: F.body, fontSize: 12.5, color: p.t2, valign: "top", margin: 0, lineSpacing: 20 });
+      itemBox(s, p, x, top, w, h, i);
+      const cx = x + 0.3;
+      drawIndex(s, p, i, cx, top + 0.26, 0.46, cd.no);
+      txt(s, cd.head || "", { x: cx, y: top + 0.9, w: w - 0.6, h: 0.8, fs: sc(16), bold: true, color: p.t1, font: F.title });
+      if (cd.desc) txt(s, cd.desc, { x: cx, y: top + 1.75, w: w - 0.6, h: Math.max(h - 2.1, 0.4), fs: sc(12), color: p.t2, valign: "top", lh: sc(12) * 1.6 });
     });
     footer(s, p, o.page);
     if (o.notes) s.addNotes(o.notes);
     return s;
   };
 
-  // ---- 版式 9 · imageText 左文右图 ----
-  // { kicker, title, lead, callout:{text, source}, image:{path, caption} | placeholder:"文字", page, notes }
-  S.imageText = function (o) {
-    const p = pal(false);
-    const s = newSlide(false);
-    header(s, p, o);
-    const top = 2.2, textW = 6.0;
-    if (o.lead) s.addText(o.lead, { x: MX, y: top + 0.1, w: textW, h: 1.8,
-      fontFace: F.body, fontSize: 15.5, color: p.t2, valign: "top", margin: 0, lineSpacing: 26 });
-    if (o.callout) {
-      const cy = PH - 2.7;
-      accentBar(s, MX, cy, 0.045, 1.35, p.acF);
-      s.addText(o.callout.text || "", { x: MX + 0.25, y: cy, w: textW - 0.3, h: 1.0,
-        fontFace: F.title, fontSize: 15, italic: true, color: p.t1, valign: "top", margin: 0 });
-      if (o.callout.source) s.addText(o.callout.source, { x: MX + 0.25, y: cy + 1.02, w: textW - 0.3, h: 0.35,
-        fontFace: F.mono, fontSize: 10.5, color: p.t3, margin: 0 });
-    }
-    const ix = MX + textW + 0.45, iw = PW - MX - ix, ih = PH - top - 1.35;
-    if (o.image && o.image.path) {
-      s.addImage({ path: o.image.path, x: ix, y: top, w: iw, h: ih, sizing: { type: "cover", w: iw, h: ih } });
-    } else {
-      card(s, ix, top, iw, ih, { fill: C.surface, lineColor: C.border });
-      s.addText(o.placeholder || "IMAGE", { x: ix, y: top, w: iw, h: ih,
-        fontFace: F.mono, fontSize: 13, charSpacing: 2, color: p.t3, align: "center", valign: "middle" });
-    }
-    const cap = o.image && o.image.caption;
-    if (cap) s.addText(cap, { x: ix, y: top + ih + 0.08, w: iw, h: 0.3,
-      fontFace: F.mono, fontSize: 10, charSpacing: 1.5, color: p.t3, margin: 0 });
+  // ---- comparison 对比 ----
+  S.comparison = function (o) {
+    const p = pal(false), s = newSlide(false);
+    const top = header(s, p, o);
+    const h = PH - top - 0.85, w = (CW - 0.4) / 2;
+    [[o.left, MX, o.left && o.left.bad ? C.bad : p.t3],
+     [o.right, MX + w + 0.4, o.right && o.right.good ? C.good : p.ac]].forEach(([side, x, tagColor], si) => {
+      if (!side) return;
+      itemBox(s, p, x, top, w, h, si);
+      box(s, { x, y: top, w, h: 0.06, fill: tagColor });
+      if (side.tag) txt(s, side.tag, { x: x + 0.32, y: top + 0.24, w: w - 0.64, h: 0.3, font: F.mono, fs: sc(11), ls: 2, color: tagColor });
+      if (side.head) txt(s, side.head, { x: x + 0.32, y: top + 0.6, w: w - 0.64, h: 0.5, fs: sc(18), bold: true, color: p.t1, font: F.title });
+      const rr = (side.items || []).map(t0 => ({ text: t0, options: { bullet: { characterCode: "2013", indent: 14 }, breakLine: true, paraSpaceAfter: 8, color: p.t2 } }));
+      if (rr.length) s.addText(rr, { x: x + 0.32, y: top + 1.25, w: w - 0.64, h: h - 1.6, fontFace: F.body, fontSize: sc(13), valign: "top", margin: 0 });
+    });
     footer(s, p, o.page);
     if (o.notes) s.addNotes(o.notes);
     return s;
   };
 
-  // ---- 版式 10 · kpiGrid KPI 卡片(2-4 个) ----
-  // { kicker, title, kpis:[{label, value, unit?, delta?, dir?:"up"|"down"|"flat", good?:bool}], page, notes }
+  // ---- imageText 左文右图 ----
+  S.imageText = function (o) {
+    const p = pal(false), s = newSlide(false);
+    const top = header(s, p, o);
+    const textW = 6.0;
+    if (o.lead) txt(s, o.lead, { x: MX, y: top + 0.05, w: textW, h: 1.8, fs: sc(14.5), color: p.t2, valign: "top", lh: sc(14.5) * 1.75 });
+    if (o.callout) {
+      const cy = PH - 2.65;
+      box(s, { x: MX, y: cy, w: 0.05, h: 1.3, fill: p.acF });
+      txt(s, o.callout.text || "", { x: MX + 0.25, y: cy, w: textW - 0.3, h: 0.95, font: F.title, fs: sc(14.5), italic: true, color: p.t1, valign: "top" });
+      if (o.callout.source) txt(s, o.callout.source, { x: MX + 0.25, y: cy + 1.0, w: textW - 0.3, h: 0.32, font: F.mono, fs: sc(10), color: p.t3 });
+    }
+    const ix = MX + textW + 0.45, iw = PW - MX - ix, ih = PH - top - 1.3;
+    if (o.image && o.image.path) {
+      s.addImage({ path: o.image.path, x: ix, y: top, w: iw, h: ih, sizing: { type: "cover", w: iw, h: ih } });
+    } else {
+      box(s, { x: ix, y: top, w: iw, h: ih, fill: C.surface, line: p.line, round: R > 0 });
+      txt(s, o.placeholder || "IMAGE", { x: ix, y: top, w: iw, h: ih, font: F.mono, fs: sc(12), ls: 2, color: p.t3, align: "center", valign: "middle" });
+    }
+    const cap = o.image && o.image.caption;
+    if (cap) txt(s, cap, { x: ix, y: top + ih + 0.08, w: iw, h: 0.28, font: F.mono, fs: sc(9.5), ls: 1.5, color: p.t3 });
+    footer(s, p, o.page);
+    if (o.notes) s.addNotes(o.notes);
+    return s;
+  };
+
+  // ---- kpiGrid ----
   S.kpiGrid = function (o) {
-    const p = pal(false);
-    const s = newSlide(false);
-    header(s, p, o);
-    const kpis = o.kpis || [];
-    const top = 2.5, gap = 0.35, n = Math.max(kpis.length, 1);
-    const w = (CW - gap * (n - 1)) / n, h = Math.min(3.3, PH - top - 1.05);
+    const p = pal(false), s = newSlide(false);
+    const top = header(s, p, o);
+    const kpis = o.kpis || [], gap = 0.35, n = Math.max(kpis.length, 1);
+    const w = (CW - gap * (n - 1)) / n, h = Math.min(3.2, PH - top - 1.0);
     kpis.forEach((k, i) => {
       const x = MX + i * (w + gap);
-      card(s, x, top, w, h);
-      s.addText(k.label || "", { x: x + 0.3, y: top + 0.3, w: w - 0.6, h: 0.35,
-        fontFace: F.mono, fontSize: 11, charSpacing: 1.5, color: p.t3, margin: 0 });
-      const runs = [{ text: String(k.value), options: { color: p.t1 } }];
-      if (k.unit) runs.push({ text: " " + k.unit, options: { color: p.t2, fontSize: 16 } });
-      s.addText(runs, { x: x + 0.28, y: top + 0.85, w: w - 0.56, h: 1.15,
-        fontFace: F.num, fontSize: 40, bold: true, margin: 0 });
+      itemBox(s, p, x, top, w, h, i);
+      txt(s, k.label || "", { x: x + 0.28, y: top + 0.26, w: w - 0.56, h: 0.32, font: F.mono, fs: sc(10.5), ls: 1.5, color: p.t3 });
+      const rr = [{ text: String(k.value), options: { color: p.t1 } }];
+      if (k.unit) rr.push({ text: " " + k.unit, options: { color: p.t2, fontSize: sc(15) } });
+      txt(s, rr, { x: x + 0.26, y: top + 0.75, w: w - 0.52, h: 1.15, font: F.num, fs: sc(38), bold: true });
       if (k.delta) {
-        const dirColor = k.good === false ? C.bad : k.good ? C.good : p.t2;
-        const arrow = k.dir === "down" ? "↓ " : k.dir === "flat" ? "→ " : "↑ ";
-        s.addText(arrow + k.delta, { x: x + 0.3, y: top + h - 0.65, w: w - 0.6, h: 0.4,
-          fontFace: F.body, fontSize: 13, bold: true, color: dirColor, margin: 0 });
+        const dc = k.good === false ? C.bad : k.good ? C.good : p.t2;
+        const ar = k.dir === "down" ? "↓ " : k.dir === "flat" ? "→ " : "↑ ";
+        txt(s, ar + k.delta, { x: x + 0.28, y: top + h - 0.6, w: w - 0.56, h: 0.36, fs: sc(12.5), bold: true, color: dc });
       }
     });
     footer(s, p, o.page);
@@ -397,113 +634,75 @@ function createDeck(themeName, meta = {}) {
     return s;
   };
 
-  // ---- 版式 12 · timeline 横向时间线(3-6 节点) ----
-  // { kicker, title, nodes:[{tag, head, desc, done?}], page, notes }
+  // ---- timeline ----
   S.timeline = function (o) {
-    const p = pal(false);
-    const s = newSlide(false);
-    header(s, p, o);
-    const nodes = o.nodes || [];
-    const n = Math.max(nodes.length, 1);
-    const lineY = 3.35, step = CW / n;
-    s.addShape(pres.shapes.LINE, { x: MX, y: lineY, w: CW - step + step / 2, h: 0,
-      line: { color: C.border, width: 2 } });
+    const p = pal(false), s = newSlide(false);
+    const top = header(s, p, o);
+    const nodes = o.nodes || [], n = Math.max(nodes.length, 1);
+    const lineY = top + 1.05, step = CW / n;
+    lineH(s, MX + step / 2, lineY, CW - step, p.line, 2);
     nodes.forEach((nd, i) => {
-      const cx = MX + i * step + step / 2;
-      s.addShape(pres.shapes.OVAL, { x: cx - 0.09, y: lineY - 0.09, w: 0.18, h: 0.18,
-        fill: { color: nd.done === false ? C.border : p.acF } });
-      if (nd.tag) s.addText(nd.tag, { x: cx - step / 2 + 0.1, y: lineY - 0.62, w: step - 0.2, h: 0.32,
-        fontFace: F.mono, fontSize: 10.5, charSpacing: 1.5, color: p.ac, align: "center", margin: 0 });
-      s.addText(nd.head || "", { x: cx - step / 2 + 0.1, y: lineY + 0.28, w: step - 0.2, h: 0.55,
-        fontFace: F.body, fontSize: 14.5, bold: true, color: p.t1, align: "center", margin: 0 });
-      if (nd.desc) s.addText(nd.desc, { x: cx - step / 2 + 0.15, y: lineY + 0.9, w: step - 0.3, h: 2.2,
-        fontFace: F.body, fontSize: 11.5, color: p.t2, align: "center", valign: "top", margin: 0, lineSpacing: 18 });
+      const cxx = MX + i * step + step / 2;
+      if (L.num === "geo") {
+        const kind = i % 3, cols = [C.accentFill || C.accent, C.accent2, C.warn];
+        if (kind === 0) oval(s, { x: cxx - 0.11, y: lineY - 0.11, w: 0.22, h: 0.22, fill: nd.done === false ? C.border : cols[0] });
+        else if (kind === 1) box(s, { x: cxx - 0.11, y: lineY - 0.11, w: 0.22, h: 0.22, fill: nd.done === false ? C.border : cols[1] });
+        else tri(s, { x: cxx - 0.12, y: lineY - 0.11, w: 0.24, h: 0.22, fill: nd.done === false ? C.border : cols[2] });
+      } else if (CONTAINER_OF[L.list] === "shadowBox") {
+        box(s, { x: cxx - 0.06, y: lineY - 0.06, w: 0.2, h: 0.2, fill: "0A0A0A" });
+        box(s, { x: cxx - 0.11, y: lineY - 0.11, w: 0.2, h: 0.2, fill: nd.done === false ? C.bg : p.acF, line: "0A0A0A", lw: 1.4 });
+      } else {
+        oval(s, { x: cxx - 0.1, y: lineY - 0.1, w: 0.2, h: 0.2, fill: nd.done === false ? C.border : p.acF });
+      }
+      if (nd.tag) txt(s, nd.tag, { x: cxx - step / 2 + 0.1, y: lineY - 0.6, w: step - 0.2, h: 0.3, font: F.mono, fs: sc(10), ls: 1.5, color: p.ac, align: "center" });
+      txt(s, nd.head || "", { x: cxx - step / 2 + 0.1, y: lineY + 0.28, w: step - 0.2, h: 0.52, fs: sc(14), bold: true, color: p.t1, align: "center", font: F.title });
+      if (nd.desc) txt(s, nd.desc, { x: cxx - step / 2 + 0.15, y: lineY + 0.85, w: step - 0.3, h: 2.0, fs: sc(11), color: p.t2, align: "center", valign: "top", lh: sc(11) * 1.55 });
     });
     footer(s, p, o.page);
     if (o.notes) s.addNotes(o.notes);
     return s;
   };
 
-  // ---- 版式 13 · table 数据表格 ----
-  // { kicker, title, headers:[], rows:[[]], source, page, notes, colW?:[] }
+  // ---- table ----
   S.table = function (o) {
-    const p = pal(false);
-    const s = newSlide(false);
-    header(s, p, o);
-    const headers = (o.headers || []).map(t => ({ text: t, options: {
-      fontFace: F.body, fontSize: 12.5, bold: true, color: pal(true).t1, fill: { color: C.hero },
-      valign: "middle", margin: 6 } }));
-    // 数字/代码类单元格右对齐,文本左对齐
-    const numeric = t => /^[0-9#$¥€+\-.]/.test(String(t).trim());
+    const p = pal(false), s = newSlide(false);
+    const top = header(s, p, o);
+    const hp = pal(true);
+    const headers = (o.headers || []).map(t0 => ({ text: t0, options: {
+      fontFace: F.body, fontSize: sc(12), bold: true, color: hp.t1, fill: { color: C.hero }, valign: "middle", margin: 6 } }));
+    const numeric = t0 => /^[0-9#$¥€+\-.]/.test(String(t0).trim());
     const rows = (o.rows || []).map((r, ri) => r.map((cell, ci) => ({ text: String(cell), options: {
-      fontFace: F.body, fontSize: 12, color: ci === 0 ? p.t1 : p.t2, bold: ci === 0,
+      fontFace: F.body, fontSize: sc(11.5), color: ci === 0 ? p.t1 : p.t2, bold: ci === 0,
       fill: { color: ri % 2 ? C.surface : C.bg }, valign: "middle", margin: 6,
       align: ci > 0 && numeric(cell) ? "right" : "left" } })));
-    s.addTable([headers, ...rows], {
-      x: MX, y: 2.25, w: CW, colW: o.colW,
-      border: { type: "solid", pt: 0.5, color: C.border }, autoPage: false,
-    });
-    if (o.source) s.addText("来源: " + o.source, { x: MX, y: PH - 0.88, w: CW, h: 0.3,
-      fontFace: F.mono, fontSize: 10, color: p.t3, margin: 0 });
+    s.addTable([headers, ...rows], { x: MX, y: top + 0.05, w: CW, colW: o.colW,
+      border: { type: "solid", pt: 0.5, color: C.border }, autoPage: false });
+    if (o.source) txt(s, "来源: " + o.source, { x: MX, y: PH - 0.85, w: CW, h: 0.28, font: F.mono, fs: sc(9.5), color: p.t3 });
     footer(s, p, o.page);
     if (o.notes) s.addNotes(o.notes);
     return s;
   };
 
-  // ---- 版式 14 · processSteps 编号步骤卡(3-5 步,带箭头) ----
-  // { kicker, title, steps:[{head, desc}], page, notes }
+  // ---- processSteps ----
   S.processSteps = function (o) {
-    const p = pal(false);
-    const s = newSlide(false);
-    header(s, p, o);
-    const steps = o.steps || [];
-    const top = 2.5, n = Math.max(steps.length, 1), arrowW = 0.42;
-    const w = (CW - arrowW * (n - 1)) / n, h = PH - top - 1.2;
+    const p = pal(false), s = newSlide(false);
+    const top = header(s, p, o);
+    const steps = o.steps || [], n = Math.max(steps.length, 1), aw = 0.42;
+    const w = (CW - aw * (n - 1)) / n, h = PH - top - 1.1;
     steps.forEach((st, i) => {
-      const x = MX + i * (w + arrowW);
-      card(s, x, top, w, h);
-      accentBar(s, x, top, w, 0.055, p.acF);
-      s.addText(String(i + 1).padStart(2, "0"), { x: x + 0.28, y: top + 0.3, w: w - 0.56, h: 0.55,
-        fontFace: F.num, fontSize: 24, bold: true, color: p.ac, margin: 0 });
-      s.addText(st.head || "", { x: x + 0.28, y: top + 0.95, w: w - 0.56, h: 0.8,
-        fontFace: F.body, fontSize: 15, bold: true, color: p.t1, margin: 0 });
-      if (st.desc) s.addText(st.desc, { x: x + 0.28, y: top + 1.8, w: w - 0.56, h: h - 2.15,
-        fontFace: F.body, fontSize: 11.5, color: p.t2, valign: "top", margin: 0, lineSpacing: 18 });
-      if (i < n - 1) s.addText("→", { x: x + w - 0.04, y: top + h / 2 - 0.25, w: arrowW + 0.08, h: 0.5,
-        fontFace: F.body, fontSize: 18, bold: true, color: p.t3, align: "center", valign: "middle", margin: 0 });
+      const x = MX + i * (w + aw);
+      itemBox(s, p, x, top, w, h, i);
+      drawIndex(s, p, i, x + 0.26, top + 0.24, 0.46);
+      txt(s, st.head || "", { x: x + 0.26, y: top + 0.88, w: w - 0.52, h: 0.75, fs: sc(14.5), bold: true, color: p.t1, font: F.title });
+      if (st.desc) txt(s, st.desc, { x: x + 0.26, y: top + 1.68, w: w - 0.52, h: Math.max(h - 2.0, 0.4), fs: sc(11), color: p.t2, valign: "top", lh: sc(11) * 1.55 });
+      if (i < n - 1) txt(s, "→", { x: x + w - 0.05, y: top + h / 2 - 0.25, w: aw + 0.1, h: 0.5, fs: sc(17), bold: true, color: p.t3, align: "center", valign: "middle" });
     });
     footer(s, p, o.page);
     if (o.notes) s.addNotes(o.notes);
     return s;
   };
 
-  // ---- 版式 15 · closing 收束页(hero 底) ----
-  // { kicker, title(runs), sub, cta, page, notes }
-  S.closing = function (o) {
-    const p = pal(true);
-    const s = newSlide(true);
-    if (o.kicker) s.addText(o.kicker, { x: MX, y: 1.7, w: CW, h: 0.4, fontFace: F.mono,
-      fontSize: 13, charSpacing: 3, color: p.ac, align: "center", margin: 0 });
-    s.addText(o.title ? o.title.map(r => ({ text: r[0], options: { color: r[1] ? p.ac : p.t1, breakLine: r[2] === true } })) : [],
-      { x: MX, y: 2.5, w: CW, h: 1.9, fontFace: F.title, fontSize: o.titleSize || 44,
-        bold: true, align: "center", margin: 0, lineSpacing: (o.titleSize || 44) * 1.2 });
-    if (o.sub) s.addText(o.sub, { x: 2.2, y: 4.6, w: PW - 4.4, h: 0.8, fontFace: F.body,
-      fontSize: 17, color: p.t2, align: "center" });
-    if (o.cta) {
-      const cw2 = Math.max(2.6, o.cta.length * 0.22 + 1);
-      card(s, (PW - cw2) / 2, 5.6, cw2, 0.62, { fill: p.acF });
-      s.addText(o.cta, { x: (PW - cw2) / 2, y: 5.6, w: cw2, h: 0.62, fontFace: F.body,
-        fontSize: 15, bold: true, color: p.bg, align: "center", valign: "middle", margin: 0 });
-    }
-    footer(s, p, o.page);
-    if (o.notes) s.addNotes(o.notes);
-    return s;
-  };
-
-  return {
-    pres, S, T, C, F,
-    save: fileName => pres.writeFile({ fileName }),
-  };
+  return { pres, S, T, C, F, ctx, save: fileName => pres.writeFile({ fileName }) };
 }
 
 module.exports = { createDeck, listThemes, THEMES };
