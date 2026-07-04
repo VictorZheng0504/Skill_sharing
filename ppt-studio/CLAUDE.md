@@ -52,7 +52,7 @@ end tell'
 
 - **`assets/deck_styles.js`** — **5 个高识别度 hero 版式的每主题专属构图**(`cover / divider / statement / closing / bigstat`)。这是排版个性的主战场:每主题一个模块,导出对象按主题 id 索引。未实现专属构图的主题回落到 `__fallback`(通用 hero,可用但不出彩)。`createDeck` 里 `S.cover = heroFn("cover")` 等把这 5 个绑定到专属或 fallback 实现。
 
-**当前状态**:22 个主题的 DNA 令牌已全部定义;`deck_styles.js` 只实现了 4 个标杆主题(`mckinsey` / `keynote-dark` / `magazine-ink` / `swiss-ikb`)的专属构图,其余 18 个走 fallback(见会话任务列表 / git 提交说明)。
+**当前状态**:22 个主题的 DNA 令牌与专属构图已全部完成(22/22),`__fallback` 仅作防御性保留。18 个后补主题的 bigstat 共用 `barStat()` 基座(header DNA 已保证页间差异,少数主题用 opt 微调),5 个 hero 版式已逐主题生成走查 deck 并经 PDF 目检通过。
 
 ## 铁律
 
