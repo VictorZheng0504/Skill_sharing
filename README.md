@@ -42,10 +42,12 @@
 
 ### 方式一:作为 Claude Code 个人 skill(推荐)
 
+本项目托管在技能合集仓库 [VictorZheng0504/Skill_sharing](https://github.com/VictorZheng0504/Skill_sharing) 的 `ppt-studio/` 子目录:
+
 ```bash
-git clone https://github.com/<your-name>/ppt-studio.git
+git clone https://github.com/VictorZheng0504/Skill_sharing.git
 mkdir -p ~/.claude/skills
-cp -r ppt-studio ~/.claude/skills/
+cp -r Skill_sharing/ppt-studio ~/.claude/skills/
 ```
 
 重启 Claude Code 后,对它说"帮我做 PPT"即可触发。
@@ -115,7 +117,7 @@ d.S.contentRows({
          ["03", "逐页生成", "每页 QA 自检"]],
   page: "02", notes: "这页的演讲者备注",
 });
-d.S.closing({ kicker: "THANKS", title: [["谢谢", false]], cta: "github.com/you/ppt-studio" });
+d.S.closing({ kicker: "THANKS", title: [["谢谢", false]], cta: "github.com/VictorZheng0504/Skill_sharing" });
 
 d.save("my-deck.pptx");
 ```
