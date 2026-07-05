@@ -1,10 +1,10 @@
-# Step 5 · 主题库(20 个主题 × 7 大场景)
+# Step 5 · 主题库(22 个主题 × 8 大场景)
 
 所有主题定义在 `assets/themes.json`,是**同一套语义令牌的不同取值**:
 `bg / surface / border / t1-t3(文字三级) / accent(文字强调,对比度达标) / accentFill(装饰强调,可高饱和) / good / warn / bad / hero*(hero 页专用)`。
 版式函数只引用令牌 → 任何主题 × 任何版式都能直接组合。
 
-**只允许从这 20 套预设里选**,不接受自定义 hex——配色是成套调过对比度的,单改一个值很容易破坏可读性(此规则借鉴 guizang-ppt-skill 的"预设制")。如确需品牌定制,复制一份现有主题改全套令牌,并重跑对比度检查。
+**只允许从这 22 套预设里选**,不接受自定义 hex——配色是成套调过对比度的,单改一个值很容易破坏可读性(此规则借鉴 guizang-ppt-skill 的"预设制")。如确需品牌定制,复制一份现有主题改全套令牌,并重跑对比度检查。
 
 ---
 
@@ -58,6 +58,13 @@
 | `warm-academic` | 暖色学术 | 暖棕 #7B3F00 + 米色底 | 教学/科普,亲和 |
 | `soft-pastel` | 柔和粉彩 | 紫 #6B4EE6 + 粉 #FF5C8A,大圆角 | 团队活动/轻松分享 |
 
+### 发布会 / Keynote(全居中、超大字、极简至无)
+
+| id | 名称 | 关键色 | 气质 |
+|---|---|---|---|
+| `keynote-dark` | 发布会·夜幕 | 纯黑 #000000 + 系统蓝 #2997FF | 每页一句超大字,重磅宣布 |
+| `keynote-light` | 发布会·晨光 | 纯白 + 蓝 #0071E3,字重更轻 | 轻盈的重磅,健康/新技术发布 |
+
 ### 大胆 / 宣言
 
 | id | 名称 | 关键色 | 气质 |
@@ -78,6 +85,7 @@
 | 战略汇报、给高管/董事会 | `mckinsey` | `clean-pro`、`academic-navy` |
 | KPI/运营/数据评审 | `dashboard` | `clean-pro`、`swiss-ikb` |
 | 融资路演、产品/品牌发布 | `swiss-ikb` | `mckinsey`、`neo-brutalism` |
+| 产品发布会、重磅宣布、愿景演讲 | `keynote-dark` | `keynote-light`、`swiss-ikb` |
 | 个人故事、内容分享、发布会叙事 | `magazine-ink` | `indigo-porcelain`、`dune` |
 | 技术分享、开发者大会 | `tokyo-night` | `nord`、`minimal-gray`、`terminal-green` |
 | 教学课件、培训、科普 | `warm-academic` | `soft-pastel`、`clean-pro` |

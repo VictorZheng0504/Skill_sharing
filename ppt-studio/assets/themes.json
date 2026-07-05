@@ -12,6 +12,7 @@
       "hero": "1F3A5F", "heroT1": "FFFFFF", "heroT2": "C9D2E0", "heroAccent": "E4C55B", "heroLine": "56718F"
     },
     "f": { "title": "Noto Serif SC", "body": "Noto Sans SC", "mono": "Consolas", "num": "Georgia" },
+    "layout": { "persona": "学院书卷:居中书名页、粗细双线、衬线编号、点线引导", "align": "left", "header": "thickThin", "list": "leader", "footer": "centerPage", "num": "serif", "scale": 1 },
     "fontNote": "标题需思源宋体(Noto Serif SC),正文思源黑体;未安装回退系统默认"
   },
   "minimal-gray": {
@@ -27,6 +28,7 @@
       "hero": "0C0D10", "heroT1": "FFFFFF", "heroT2": "A1A1AA", "heroAccent": "4589FF", "heroLine": "3A3A40"
     },
     "f": { "title": "Inter", "body": "Noto Sans SC", "mono": "JetBrains Mono", "num": "Inter" },
+    "layout": { "persona": "留白至上:黑色短粗标记、无容器列表、大字距、右下孤页码", "align": "left", "header": "blackTick", "list": "bareRows", "footer": "pageOnly", "num": "plain", "scale": 1.08 },
     "fontNote": "需 Inter / JetBrains Mono;未安装回退 Helvetica/等宽默认"
   },
   "research-defense": {
@@ -42,6 +44,7 @@
       "hero": "1E293B", "heroT1": "FFFFFF", "heroT2": "B5C2D4", "heroAccent": "2DD4BF", "heroLine": "3E4C63"
     },
     "f": { "title": "Noto Serif SC", "body": "Noto Sans SC", "mono": "Consolas", "num": "Georgia" },
+    "layout": { "persona": "论文边栏:左侧竖色带贯穿全页、内容整体缩进、圆圈编号、左下章节标注", "align": "left", "header": "sidebar", "list": "circledHair", "footer": "chapterLeft", "num": "circle", "scale": 1 },
     "fontNote": "同 academic-navy,思源系字体建议安装"
   },
   "mckinsey": {
@@ -57,6 +60,7 @@
       "hero": "243447", "heroT1": "FFFFFF", "heroT2": "B9C4D0", "heroAccent": "7FA3C4", "heroLine": "48586B"
     },
     "f": { "title": "Noto Sans SC", "body": "Noto Sans SC", "mono": "Consolas", "num": "Georgia" },
+    "layout": { "persona": "咨询报告:标题即结论(两行大标题)、顶部通栏细线、无卡片全发丝线、左下永远有来源行", "align": "left", "header": "topbar", "list": "hairline", "footer": "source", "num": "dot", "scale": 1 },
     "fontNote": "全系统安全字体思路;思源黑体缺失时回退雅黑/苹方"
   },
   "clean-pro": {
@@ -72,6 +76,7 @@
       "hero": "2563EB", "heroT1": "FFFFFF", "heroT2": "C7D8FC", "heroAccent": "FBBF24", "heroLine": "5484EF"
     },
     "f": { "title": "Noto Sans SC", "body": "Noto Sans SC", "mono": "Consolas", "num": "Inter" },
+    "layout": { "persona": "现代产品:胶囊标签、圆角浮卡、蓝底 hero 上叠白卡", "align": "left", "header": "pill", "list": "cards", "footer": "minimal", "num": "plain", "scale": 1 },
     "fontNote": "思源黑体缺失时回退雅黑/苹方,风格损失小"
   },
   "dashboard": {
@@ -87,6 +92,7 @@
       "hero": "0F172A", "heroT1": "F1F5F9", "heroT2": "94A3B8", "heroAccent": "38BDF8", "heroLine": "2C3A52"
     },
     "f": { "title": "Inter", "body": "Noto Sans SC", "mono": "JetBrains Mono", "num": "Inter" },
+    "layout": { "persona": "BI 界面:右上筛选器胶囊、斑马数据行、底部状态栏、表格数字感", "align": "left", "header": "filters", "list": "dataRows", "footer": "statusbar", "num": "tabular", "scale": 1 },
     "fontNote": "数字用 Inter(等宽数字特性佳);缺失回退 Arial"
   },
   "magazine-ink": {
@@ -102,6 +108,7 @@
       "hero": "0A0A0B", "heroT1": "F1EFEA", "heroT2": "B9B6AD", "heroAccent": "D9B96C", "heroLine": "3A3A3C"
     },
     "f": { "title": "Noto Serif SC", "body": "Noto Sans SC", "mono": "IBM Plex Mono", "num": "Playfair Display" },
+    "layout": { "persona": "电子杂志:刊头 chrome 行(左栏目右期号)、衬线巨标题、段落式正文、居中 folio 页码", "align": "left", "header": "chrome", "list": "paragraphs", "footer": "folio", "num": "serif", "scale": 1 },
     "fontNote": "英文大字需 Playfair Display,中文标题思源宋体;未安装回退 Georgia/宋体"
   },
   "indigo-porcelain": {
@@ -117,6 +124,7 @@
       "hero": "0A1F3D", "heroT1": "F1F3F5", "heroT2": "A9B6C9", "heroAccent": "D9B96C", "heroLine": "2C4260"
     },
     "f": { "title": "Noto Serif SC", "body": "Noto Sans SC", "mono": "IBM Plex Mono", "num": "Playfair Display" },
+    "layout": { "persona": "画册对开:标题右对齐、编号靠右的非对称版面、右下 folio", "align": "right", "header": "rightAlign", "list": "rightNums", "footer": "folioRight", "num": "serif", "scale": 1 },
     "fontNote": "同 magazine-ink 字体栈"
   },
   "kraft-paper": {
@@ -132,6 +140,7 @@
       "hero": "2A1E13", "heroT1": "EEDFC7", "heroT2": "B8A587", "heroAccent": "D9A45B", "heroLine": "4A3A28"
     },
     "f": { "title": "Noto Serif SC", "body": "Noto Sans SC", "mono": "IBM Plex Mono", "num": "Playfair Display" },
+    "layout": { "persona": "手账剪贴:斜贴胶带压住 kicker、虚线分隔、圆圈编号、居中圆点 folio", "align": "left", "header": "tape", "list": "dashedDots", "footer": "dotFolio", "num": "circle", "scale": 1 },
     "fontNote": "同 magazine-ink 字体栈"
   },
   "dune": {
@@ -147,6 +156,7 @@
       "hero": "1F1A14", "heroT1": "F0E6D2", "heroT2": "AFA48E", "heroAccent": "C98A3D", "heroLine": "3E362A"
     },
     "f": { "title": "Noto Serif SC", "body": "Noto Sans SC", "mono": "IBM Plex Mono", "num": "Playfair Display" },
+    "layout": { "persona": "极简画册:超细大字横贯、罗马数字页码、大间距轻盈列表、地平线色带", "align": "left", "header": "thinRoman", "list": "airyRows", "footer": "roman", "num": "roman", "scale": 1.05 },
     "fontNote": "同 magazine-ink 字体栈"
   },
   "swiss-ikb": {
@@ -162,11 +172,12 @@
       "hero": "002FA7", "heroT1": "FFFFFF", "heroT2": "C9D4FF", "heroAccent": "FFD500", "heroLine": "4059B8"
     },
     "f": { "title": "Inter", "body": "Inter", "mono": "JetBrains Mono", "num": "Inter" },
+    "layout": { "persona": "满幅色块:巨大幽灵页码垫底、flush-left 大字、方块 bullet、黑底页码块", "align": "left", "header": "ghostNum", "list": "squareGrid", "footer": "swissBlock", "num": "plain", "scale": 1.05 },
     "fontNote": "需安装 Inter / JetBrains Mono;未安装回退 Helvetica/Arial,风格损失小"
   },
   "swiss-lemon": {
     "label": "瑞士·柠檬黄 · Swiss Lemon",
-    "scene": ["年轻品牌", "创意提案", "活动宣讲"],
+    "scene": ["年轻品牌", "创意提案", "活动宣讲", "校园科普"],
     "dark": false,
     "radius": 0,
     "c": {
@@ -177,11 +188,12 @@
       "hero": "FFD500", "heroT1": "0A0A0A", "heroT2": "4A4300", "heroAccent": "0A0A0A", "heroLine": "C7A800"
     },
     "f": { "title": "Inter", "body": "Inter", "mono": "JetBrains Mono", "num": "Inter" },
+    "layout": { "persona": "半版色块:左侧黄色竖版封面、标题前实心大方块、几何大圆点列表、黄色粗底线页脚", "align": "left", "header": "blockTag", "list": "bigDots", "footer": "accentRule", "num": "plain", "scale": 1.05 },
     "fontNote": "同 swiss-ikb;黄底 hero 页文字为纯黑,保证对比度"
   },
   "swiss-orange": {
     "label": "瑞士·安全橙 · Swiss Orange",
-    "scene": ["工业主题", "工程汇报", "警示性内容"],
+    "scene": ["工业主题", "工程汇报", "警示性内容", "急救培训"],
     "dark": false,
     "radius": 0,
     "c": {
@@ -192,6 +204,7 @@
       "hero": "0A0A0A", "heroT1": "FAFAF8", "heroT2": "9A9A96", "heroAccent": "FF6B35", "heroLine": "323230"
     },
     "f": { "title": "Inter", "body": "Inter", "mono": "JetBrains Mono", "num": "Inter" },
+    "layout": { "persona": "警示条纹:上下橙色警示带、STEP 大编号、倒计时式步骤时间轴、角部色带页码", "align": "left", "header": "stepBand", "list": "stepTimeline", "footer": "cornerBand", "num": "big", "scale": 1 },
     "fontNote": "同 swiss-ikb"
   },
   "tokyo-night": {
@@ -206,7 +219,8 @@
       "good": "9ECE6A", "warn": "E0AF68", "bad": "F7768E",
       "hero": "16161E", "heroT1": "C0CAF5", "heroT2": "787FA6", "heroAccent": "7AA2F7", "heroLine": "3B4261"
     },
-    "f": { "title": "Inter", "body": "Noto Sans SC", "mono": "JetBrains Mono", "num": "Inter" },
+    "f": { "title": "Inter", "body": "Noto Sans SC", "mono": "JetBrains Mono", "num": "JetBrains Mono" },
+    "layout": { "persona": "代码编辑器:窗口标题栏三圆点、行号列、// 注释 kicker、底部状态栏", "align": "left", "header": "lineNo", "list": "lineNumbers", "footer": "statusline", "num": "mono", "scale": 1 },
     "fontNote": "深色主题,投影环境偏亮时慎用;打印讲义请换浅色主题"
   },
   "nord": {
@@ -222,6 +236,7 @@
       "hero": "242933", "heroT1": "ECEFF4", "heroT2": "8B96AB", "heroAccent": "88C0D0", "heroLine": "434C5E"
     },
     "f": { "title": "Inter", "body": "Noto Sans SC", "mono": "JetBrains Mono", "num": "Inter" },
+    "layout": { "persona": "极光横带:三色渐层横带签名、标题旁三色圆点、彩色刻度条列表", "align": "left", "header": "tridot", "list": "colorTicks", "footer": "tridotPage", "num": "plain", "scale": 1 },
     "fontNote": "深色主题,同 tokyo-night 注意事项"
   },
   "terminal-green": {
@@ -237,6 +252,7 @@
       "hero": "050805", "heroT1": "D2F7D2", "heroT2": "6FA57B", "heroAccent": "2EE86C", "heroLine": "1E3320"
     },
     "f": { "title": "JetBrains Mono", "body": "Noto Sans SC", "mono": "JetBrains Mono", "num": "JetBrains Mono" },
+    "layout": { "persona": "终端会话:$ 提示符、命令式 kicker、[n] 输出行、ASCII 横线、光标块", "align": "left", "header": "prompt", "list": "outputRows", "footer": "promptline", "num": "bracket", "scale": 1 },
     "fontNote": "标题即等宽字体是本主题特色;需安装 JetBrains Mono"
   },
   "warm-academic": {
@@ -252,11 +268,12 @@
       "hero": "33270F", "heroT1": "FAF7F2", "heroT2": "C4B49B", "heroAccent": "E8A25B", "heroLine": "574828"
     },
     "f": { "title": "Noto Serif SC", "body": "Noto Sans SC", "mono": "Consolas", "num": "Georgia" },
+    "layout": { "persona": "讲义课堂:「第 N 讲」方框、标题下虚线、圆圈序号、讲义式页脚", "align": "left", "header": "lecture", "list": "circledDashed", "footer": "handout", "num": "circle", "scale": 1 },
     "fontNote": "同 academic-navy 字体栈"
   },
   "soft-pastel": {
     "label": "柔和粉彩 · Soft Pastel",
-    "scene": ["轻松分享", "团队活动", "生活方式内容"],
+    "scene": ["轻松分享", "团队活动", "家长宣教"],
     "dark": false,
     "radius": 0.1,
     "c": {
@@ -267,11 +284,12 @@
       "hero": "6B4EE6", "heroT1": "FFFFFF", "heroT2": "DCD3FF", "heroAccent": "FFD6E4", "heroLine": "8D77EB"
     },
     "f": { "title": "Noto Sans SC", "body": "Noto Sans SC", "mono": "Consolas", "num": "Inter" },
+    "layout": { "persona": "圆润气泡:背景漂浮大圆、彩点串装饰、交替粉紫气泡卡", "align": "left", "header": "dotTrail", "list": "pillCards", "footer": "dotPage", "num": "plain", "scale": 1 },
     "fontNote": "思源黑体缺失时回退雅黑/苹方"
   },
   "neo-brutalism": {
     "label": "新粗野 · Neo Brutalism",
-    "scene": ["创意宣言", "先锋设计", "个人主页式分享"],
+    "scene": ["创意宣言", "先锋设计", "公众倡导"],
     "dark": false,
     "radius": 0,
     "c": {
@@ -283,7 +301,8 @@
       "hero": "0A0A0A", "heroT1": "FFFDF5", "heroT2": "B8B4A6", "heroAccent": "FFD500", "heroLine": "3A3830"
     },
     "f": { "title": "Inter", "body": "Noto Sans SC", "mono": "JetBrains Mono", "num": "Inter" },
-    "fontNote": "卡片带 2pt 黑描边是本主题特色"
+    "layout": { "persona": "粗野宣言:黑色偏移阴影盒、贴纸标签编号、超粗描边、标题装盒", "align": "left", "header": "boxed", "list": "shadowCards", "footer": "boxedPage", "num": "sticker", "scale": 1 },
+    "fontNote": "卡片带 2pt 黑描边 + 偏移阴影是本主题特色"
   },
   "bauhaus": {
     "label": "包豪斯 · Bauhaus",
@@ -298,6 +317,39 @@
       "hero": "D02F23", "heroT1": "F5F1E8", "heroT2": "F2C7B8", "heroAccent": "F0C020", "heroLine": "E05A44"
     },
     "f": { "title": "Inter", "body": "Noto Sans SC", "mono": "JetBrains Mono", "num": "Inter" },
-    "fontNote": "红底 hero 页为本主题特色;正文页红蓝黄三原色点缀"
+    "layout": { "persona": "构成主义:红圆蓝方黄三角循环、编号嵌在几何形里、几何拼贴封面", "align": "left", "header": "geoLead", "list": "geoShapes", "footer": "geoPage", "num": "geo", "scale": 1 },
+    "fontNote": "红底 hero 页与三原色几何是本主题特色"
+  },
+  "keynote-dark": {
+    "label": "发布会·夜幕 · Keynote Dark",
+    "scene": ["产品发布", "重磅宣布", "愿景演讲"],
+    "dark": true,
+    "radius": 0.09,
+    "c": {
+      "bg": "000000", "bgSoft": "0A0A0C", "surface": "111113", "border": "2A2A2E",
+      "t1": "F5F5F7", "t2": "A1A1A6", "t3": "6E6E73",
+      "accent": "2997FF", "accent2": "BF5AF2",
+      "good": "30D158", "warn": "FFD60A", "bad": "FF453A",
+      "hero": "000000", "heroT1": "F5F5F7", "heroT2": "86868B", "heroAccent": "2997FF", "heroLine": "2A2A2E"
+    },
+    "f": { "title": "Helvetica Neue", "body": "Noto Sans SC", "mono": "Menlo", "num": "Helvetica Neue" },
+    "layout": { "persona": "发布会夜幕:全居中、每页一句超大字、无 kicker 无页脚、全屏数字", "align": "center", "header": "centerNone", "list": "centerLines", "footer": "none", "num": "none", "scale": 1.3 },
+    "fontNote": "Helvetica Neue 为 macOS 预装,Windows 回退 Arial,观感损失小"
+  },
+  "keynote-light": {
+    "label": "发布会·晨光 · Keynote Light",
+    "scene": ["新技术发布", "健康类发布", "轻盈的重磅宣布"],
+    "dark": false,
+    "radius": 0.09,
+    "c": {
+      "bg": "FFFFFF", "bgSoft": "F5F5F7", "surface": "F5F5F7", "border": "D2D2D7",
+      "t1": "1D1D1F", "t2": "6E6E73", "t3": "AEAEB2",
+      "accent": "0071E3", "accent2": "BF5AF2",
+      "good": "248A3D", "warn": "C93400", "bad": "D70015",
+      "hero": "FFFFFF", "heroT1": "1D1D1F", "heroT2": "86868B", "heroAccent": "0071E3", "heroLine": "E5E5EA"
+    },
+    "f": { "title": "Helvetica Neue", "body": "Noto Sans SC", "mono": "Menlo", "num": "Helvetica Neue" },
+    "layout": { "persona": "发布会晨光:白底细字、居中巨字但字重更轻、灰阶层次、极简至无", "align": "center", "header": "centerNone", "list": "centerThin", "footer": "none", "num": "none", "scale": 1.25 },
+    "fontNote": "同 keynote-dark;浅色 hero 是本主题特色"
   }
 }

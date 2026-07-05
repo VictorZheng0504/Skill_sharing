@@ -6,7 +6,7 @@
 
 | Skill | 简介 | 文档 |
 |---|---|---|
-| [ppt-studio](ppt-studio/) | 9 步 Human-in-the-loop 工作流 × 20 设计主题 × 15 版式,生成可编辑的 .pptx | [README](ppt-studio/README.md) |
+| [ppt-studio](ppt-studio/) | 9 步 Human-in-the-loop 工作流 × 22 设计主题 × 15 版式,生成可编辑的 .pptx | [README](ppt-studio/README.md) |
 
 ## 安装(通用)
 
