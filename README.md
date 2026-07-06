@@ -1,12 +1,14 @@
 # Skill_sharing
 
+**中文** | [English](README.en.md)
+
 个人 Claude Skill 分享合集。每个子目录是一个独立完整的 skill,可单独取用。
 
 ## 目录
 
 | Skill | 简介 | 文档 |
 |---|---|---|
-| [ppt-studio](ppt-studio/) | 9 步 Human-in-the-loop 工作流 × 22 设计主题 × 15 版式,生成可编辑的 .pptx | [README](ppt-studio/README.md) |
+| [ppt-studio](ppt-studio/) | 9 步 Human-in-the-loop 工作流 × 23 设计主题 × 15 版式,生成可编辑的 .pptx | [README](ppt-studio/README.md) · [English](ppt-studio/README.en.md) |
 
 ## 安装(通用)
 

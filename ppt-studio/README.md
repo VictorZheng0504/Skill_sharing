@@ -1,5 +1,7 @@
 # ppt-studio
 
+**中文** | [English](README.en.md)
+
 > 一个 Claude Skill:9 步 Human-in-the-loop 工作流 × 23 个设计主题 × 15 个版式,生成可用 PowerPoint 编辑的 `.pptx`。
 
 **核心信念:一份好 PPT 不是从写字开始的,而是从对齐目标开始的。** 一气呵成生成的 PPT 看起来省事,但风格、目标、事实任何一个环节出错,后面全部返工。所以这个 skill 把流程拆成 9 个固定步骤,每个关键节点都停下来等你确认。
