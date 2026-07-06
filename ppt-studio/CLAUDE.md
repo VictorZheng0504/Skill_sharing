@@ -52,7 +52,9 @@ end tell'
 
 - **`assets/deck_styles.js`** — **5 个高识别度 hero 版式的每主题专属构图**(`cover / divider / statement / closing / bigstat`)。这是排版个性的主战场:每主题一个模块,导出对象按主题 id 索引。未实现专属构图的主题回落到 `__fallback`(通用 hero,可用但不出彩)。`createDeck` 里 `S.cover = heroFn("cover")` 等把这 5 个绑定到专属或 fallback 实现。
 
-**当前状态**:22 个主题的 DNA 令牌与专属构图已全部完成(22/22),`__fallback` 仅作防御性保留。18 个后补主题的 bigstat 共用 `barStat()` 基座(header DNA 已保证页间差异,少数主题用 opt 微调),5 个 hero 版式已逐主题生成走查 deck 并经 PDF 目检通过。
+**当前状态**:23 个主题的 DNA 令牌与专属构图已全部完成(23/23),`__fallback` 仅作防御性保留。后补主题的 bigstat 共用 `barStat()` 基座(header DNA 已保证页间差异,少数主题用 opt 微调),5 个 hero 版式已逐主题生成走查 deck 并经 PDF 目检通过。vic-medical 主题额外携带 `c.grid`(网格底纹)与 `c.ghost`(分节页幽灵编号)两个签名令牌,sectionDivider 支持可选 `progress` / `tone` 扩展字段。
+
+**防溢出与垂直自适应**:`txt` 原语内置多行溢出自动缩字(基于 `estW`/`estLines` 字宽估算;**单行文本永不缩**,保护幽灵编号等故意视觉溢出的装饰大字;下限 55%,传 `fit:false` 可豁免);timeline/kpiGrid 内容块在内容区垂直居中,threeCards/processSteps/twoColumn/comparison 卡片与面板按内容估高收缩,table 来源脚注挂表底。压测证据在 `_walkthrough/vic-medical/`(stress-test + 两个老主题 regress deck)。
 
 ## 铁律
 

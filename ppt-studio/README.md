@@ -1,12 +1,12 @@
 # ppt-studio
 
-> 一个 Claude Skill:9 步 Human-in-the-loop 工作流 × 22 个设计主题 × 15 个版式,生成可用 PowerPoint 编辑的 `.pptx`。
+> 一个 Claude Skill:9 步 Human-in-the-loop 工作流 × 23 个设计主题 × 15 个版式,生成可用 PowerPoint 编辑的 `.pptx`。
 
 **核心信念:一份好 PPT 不是从写字开始的,而是从对齐目标开始的。** 一气呵成生成的 PPT 看起来省事,但风格、目标、事实任何一个环节出错,后面全部返工。所以这个 skill 把流程拆成 9 个固定步骤,每个关键节点都停下来等你确认。
 
 ## 特性
 
-- **22 个主题 × 15 个版式,自由组合**——主题只是一组设计令牌(颜色/字体/圆角),版式函数只引用令牌、不写死任何色值,任意搭配不会破相
+- **23 个主题 × 15 个版式,自由组合**——主题只是一组设计令牌(颜色/字体/圆角),版式函数只引用令牌、不写死任何色值,任意搭配不会破相
 - **版式 DNA:每个主题有专属构图**——封面/幕封/金句/收束/大数字五个 hero 版式逐主题独立设计,任意两个主题并排,构图可辨识地不同,而不只是换色
 - **9 步 HITL 工作流**——受众访谈 → 大纲审查 → 事实核查 → 页数规划 → 主题决策 → 风格预演 → spec-lock 锁定 → 一次性生成 → 逐页 QA
 - **spec-lock 执行锁**——风格敲定后写入单一真值源,长 deck 逐页生成前重读,防止上下文漂移导致的风格走样
@@ -14,7 +14,7 @@
 - **输出真正的 .pptx**——基于 [pptxgenjs](https://github.com/gitbrent/PptxGenJS),可在 PowerPoint / Keynote / WPS 里继续编辑,含演讲者备注
 - **零重型依赖**——引擎只依赖 pptxgenjs 一个 npm 包
 
-## 主题预览(22 个 · 8 大场景)
+## 主题预览(23 个 · 8 大场景)
 
 | | | | |
 |---|---|---|---|
@@ -23,7 +23,7 @@
 | ![kraft-paper](docs/previews/kraft-paper.png) 杂志·牛皮纸 | ![dune](docs/previews/dune.png) 杂志·沙丘 | ![swiss-ikb](docs/previews/swiss-ikb.png) 瑞士·克莱因蓝 | ![swiss-lemon](docs/previews/swiss-lemon.png) 瑞士·柠檬黄 |
 | ![swiss-orange](docs/previews/swiss-orange.png) 瑞士·安全橙 | ![tokyo-night](docs/previews/tokyo-night.png) 东京夜 | ![nord](docs/previews/nord.png) 北欧冷蓝 | ![terminal-green](docs/previews/terminal-green.png) 绿屏终端 |
 | ![warm-academic](docs/previews/warm-academic.png) 暖色学术 | ![soft-pastel](docs/previews/soft-pastel.png) 柔和粉彩 | ![neo-brutalism](docs/previews/neo-brutalism.png) 新粗野 | ![bauhaus](docs/previews/bauhaus.png) 包豪斯 |
-| ![keynote-dark](docs/previews/keynote-dark.png) 发布会·夜幕 | ![keynote-light](docs/previews/keynote-light.png) 发布会·晨光 | | |
+| ![keynote-dark](docs/previews/keynote-dark.png) 发布会·夜幕 | ![keynote-light](docs/previews/keynote-light.png) 发布会·晨光 | ![vic-medical](docs/previews/vic-medical.png) 维克医学 | |
 
 每个主题的完整色板、字体、适用场景与推荐矩阵见 [references/theme-gallery.md](references/theme-gallery.md)。
 
@@ -92,7 +92,7 @@ npm i pptxgenjs
 2. 润色大纲(修改前后对照)→ 等你确认
 3. 列出高风险事实清单 → 问你是否要联网核查
 4. 给出**页面清单**(每页的版式与核心信息)→ 等你确认
-5. 从 22 个主题里**推荐 1 + 备选 2** → 你来选
+5. 从 23 个主题里**推荐 1 + 备选 2** → 你来选
 6. 只生成 2 页预演风格 → 不满意可低成本换向
 7. 通过后写入 spec-lock,一次性生成全部页面,逐页 QA
 8. 交付 .pptx + QA 总结
@@ -137,13 +137,13 @@ ppt-studio/
 ├── SKILL.md                        # 9 步工作流主文档(Claude 读这个)
 ├── references/
 │   ├── interview-template.md       # Step 1 访谈问卷
-│   ├── theme-gallery.md            # 22 主题库 + 场景推荐矩阵 + 字体说明
+│   ├── theme-gallery.md            # 23 主题库 + 场景推荐矩阵 + 字体说明
 │   ├── layout-catalog.md           # 15 版式目录 + 参数签名 + 容量限制
 │   ├── spec-lock-template.md       # 执行锁模板与规则
 │   └── qa-checklist.md             # 逐页 QA 清单
 ├── assets/
 │   ├── deck_engine.js              # 版式引擎(唯一依赖 pptxgenjs)
-│   └── themes.json                 # 20 组设计令牌
+│   └── themes.json                 # 23 组设计令牌
 └── docs/previews/                  # 主题预览图(README 用)
 ```
 
@@ -163,7 +163,7 @@ ppt-studio/
 ## FAQ
 
 **Q: 可以自定义配色吗?**
-不接受单点改 hex——20 套配色是成套调过对比度的,单改一个值很容易破坏可读性。品牌定制请复制一份主题令牌整套修改(`assets/themes.json`),并自行检查对比度(正文 ≥ 4.5:1)。
+不接受单点改 hex——23 套配色是成套调过对比度的,单改一个值很容易破坏可读性。品牌定制请复制一份主题令牌整套修改(`assets/themes.json`),并自行检查对比度(正文 ≥ 4.5:1)。
 
 **Q: 深色主题能打印吗?**
 不建议。深色底费墨、打印对比度差。需要讲义时用浅色主题重新生成(引擎换主题 = 改一个参数)。

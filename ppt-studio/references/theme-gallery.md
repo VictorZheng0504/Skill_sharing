@@ -1,10 +1,10 @@
-# Step 5 · 主题库(22 个主题 × 8 大场景)
+# Step 5 · 主题库(23 个主题 × 8 大场景)
 
 所有主题定义在 `assets/themes.json`,是**同一套语义令牌的不同取值**:
 `bg / surface / border / t1-t3(文字三级) / accent(文字强调,对比度达标) / accentFill(装饰强调,可高饱和) / good / warn / bad / hero*(hero 页专用)`。
 版式函数只引用令牌 → 任何主题 × 任何版式都能直接组合。
 
-**只允许从这 22 套预设里选**,不接受自定义 hex——配色是成套调过对比度的,单改一个值很容易破坏可读性(此规则借鉴 guizang-ppt-skill 的"预设制")。如确需品牌定制,复制一份现有主题改全套令牌,并重跑对比度检查。
+**只允许从这 23 套预设里选**,不接受自定义 hex——配色是成套调过对比度的,单改一个值很容易破坏可读性(此规则借鉴 guizang-ppt-skill 的"预设制")。如确需品牌定制,复制一份现有主题改全套令牌,并重跑对比度检查。
 
 ---
 
@@ -50,6 +50,7 @@
 | `tokyo-night` | 东京夜 | #1A1B26 + 天蓝/紫罗兰 | 开发者分享首选 |
 | `nord` | 北欧冷蓝 | #2E3440 + 冰蓝 #88C0D0 | 冷静克制的深色 |
 | `terminal-green` | 绿屏终端 | 近黑 + 荧光绿 #2EE86C,标题即等宽字体 | 极客/CLI 主题 |
+| `vic-medical` | 维克医学 | GitHub 深底 #0D1117 + 信号青 #2BB8F0,青调网格底纹 | 品牌课程/医学+AI 讲座,分节页带进度条 |
 
 ### 教学 / 轻松
 
@@ -89,6 +90,7 @@
 | 个人故事、内容分享、发布会叙事 | `magazine-ink` | `indigo-porcelain`、`dune` |
 | 技术分享、开发者大会 | `tokyo-night` | `nord`、`minimal-gray`、`terminal-green` |
 | 教学课件、培训、科普 | `warm-academic` | `soft-pastel`、`clean-pro` |
+| 品牌课程、医学+AI 讲座、录课配屏 | `vic-medical` | `tokyo-night`、`minimal-gray` |
 | 设计/美学/创意主题 | `bauhaus` | `neo-brutalism`、`swiss-lemon`、`dune` |
 | 不确定 | `clean-pro`(商务)/ `academic-navy`(学术) | — |
 
@@ -118,5 +120,6 @@
 | JetBrains Mono | 瑞士系/深色系 mono、terminal-green 标题 | 回退 Courier,terminal-green 损失明显 |
 | Playfair Display | 杂志系英文大数字 | 回退 Georgia,损失中等 |
 | IBM Plex Mono / Consolas | kicker/页脚 | 回退任意等宽,损失小 |
+| Space Mono | vic-medical 的 kicker/编号/页脚 | 回退 Courier,标签观感损失明显 |
 
 需要零安装的保险组合:`mckinsey` / `clean-pro` / `warm-academic`(核心观感靠雅黑/苹方即可撑住)。
