@@ -336,6 +336,23 @@
     "layout": { "persona": "发布会夜幕:全居中、每页一句超大字、无 kicker 无页脚、全屏数字", "align": "center", "header": "centerNone", "list": "centerLines", "footer": "none", "num": "none", "scale": 1.3 },
     "fontNote": "Helvetica Neue 为 macOS 预装,Windows 回退 Arial,观感损失小"
   },
+  "vic-medical": {
+    "label": "维克医学 · Vic Medical",
+    "scene": ["品牌课程", "医学+AI 讲座", "录课配屏", "深色科技调"],
+    "dark": true,
+    "radius": 0.06,
+    "c": {
+      "bg": "0D1117", "bgSoft": "10151D", "surface": "161B22", "border": "2A313B",
+      "grid": "121C27", "ghost": "112531",
+      "t1": "E6EDF3", "t2": "AEB3BA", "t3": "7A8088",
+      "accent": "2BB8F0", "accent2": "A371F7",
+      "good": "3FB950", "warn": "D29922", "bad": "F85149",
+      "hero": "0D1117", "heroT1": "FFFFFF", "heroT2": "AEB3BA", "heroAccent": "2BB8F0", "heroLine": "2A313B"
+    },
+    "f": { "title": "Noto Sans SC", "body": "Noto Sans SC", "mono": "Space Mono", "num": "Space Mono" },
+    "layout": { "persona": "深色网格科技:// 注释 kicker、标题左青边条、左青边深卡、PART 分节页(幽灵编号+青 chip+进度条)", "align": "left", "header": "edgeTitle", "list": "edgeCards", "footer": "minimal", "num": "mono", "scale": 1 },
+    "fontNote": "需 Noto Sans SC / Space Mono;未安装回退系统黑体/等宽,mono 标签观感损失明显。深色底不适合纸质讲义"
+  },
   "keynote-light": {
     "label": "发布会·晨光 · Keynote Light",
     "scene": ["新技术发布", "健康类发布", "轻盈的重磅宣布"],

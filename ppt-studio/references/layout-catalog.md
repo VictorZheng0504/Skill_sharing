@@ -40,6 +40,8 @@ await d.save("outputs/deck.pptx");
 | 流程/步骤 | `processSteps` | **3-5 步** |
 | 结尾/致谢/CTA | `closing` | — |
 
+> 引擎对"折行数超出框高"的文本会自动缩字兜底(下限 55%),但容量限制仍是排版质量的第一约束——超限先拆页/换版式,不要依赖缩字。
+
 ---
 
 ## 参数签名速查
@@ -57,6 +59,9 @@ d.S.toc({ kicker:"CONTENTS", title:"目录",
 // 3 sectionDivider — 章节幕封
 d.S.sectionDivider({ no:"02", kicker:"PART TWO",
   title:[["章节标题",false]], sub:"本章一句话", page:"05" });
+// vic-medical 主题扩展字段(其他主题忽略):
+//   progress:[["01 · 章节名",true],["02 · 章节名",false],...] 底部进度条,true=当前节
+//   tone:"bad"|"warn" 整页换强调色(如合规红线页)
 
 // 4 statement — 金句(quote:false 隐藏引号)
 d.S.statement({ kicker:"核心信念",

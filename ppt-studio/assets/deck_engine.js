@@ -48,14 +48,53 @@ function createDeck(themeName, meta = {}) {
   const sc = n => Math.round(n * (L.scale || 1) * 10) / 10;
   const TRI = pres.shapes.TRIANGLE || pres.shapes.ISOCELES_TRIANGLE || "triangle";
 
+  // ---------- 文本度量(防溢出的基础) ----------
+  // 宽度估算(英寸):CJK 全角 ≈ 1em,其余 ≈ 0.55em;ls = charSpacing(pt/字符)
+  const CJK_RE = /[⺀-鿿　-〿豈-﫿＀-￠]/;
+  const estW = (t, fs, ls) => {
+    const str = String(t == null ? "" : t);
+    let w = 0;
+    for (const ch of str) w += CJK_RE.test(ch) ? fs : fs * 0.55;
+    return (w + (ls || 0) * str.length) / 72;
+  };
+  // 折行数估算:runs 数组按 breakLine 分组,字符串按 \n 分段,每段按框宽折行
+  const estLines = (t, w, fs, ls) => {
+    const groups = [];
+    if (Array.isArray(t)) {
+      let cur = "";
+      t.forEach(r => { cur += r.text != null ? r.text : ""; if (r.options && r.options.breakLine) { groups.push(cur); cur = ""; } });
+      groups.push(cur);
+    } else String(t == null ? "" : t).split("\n").forEach(g => groups.push(g));
+    return groups.reduce((n, g) => n + Math.max(1, Math.ceil(estW(g, fs, ls) / Math.max(w, 0.1))), 0);
+  };
+
   // ---------- 绘制原语 ----------
-  const txt = (s, t, o) => s.addText(t, {
-    x: o.x, y: o.y, w: o.w, h: o.h,
-    fontFace: o.font || F.body, fontSize: o.fs || sc(14), color: o.color,
-    bold: o.bold, italic: o.italic, align: o.align, valign: o.valign,
-    charSpacing: o.ls, lineSpacing: o.lh, rotate: o.rotate,
-    margin: o.margin !== undefined ? o.margin : 0,
-  });
+  // txt 内置多行溢出自动缩字:折行数超出框高容量才触发(单行文本永不缩,
+  // 保护幽灵编号等故意视觉溢出的装饰大字);下限 55% 防不可读;传 fit:false 可豁免。
+  const txt = (s, t, o) => {
+    let fs = o.fs || sc(14), lh = o.lh;
+    if (o.fit !== false && o.w && o.h) {
+      const fs0 = fs;
+      const lineH = f => (o.lh ? o.lh * (f / fs0) : f * 1.2) / 72;
+      let L = estLines(t, o.w, fs, o.ls);
+      if (L > 1 && L * lineH(fs) > o.h + 0.02) {
+        const min = fs0 * 0.55;
+        while (fs > min && L * lineH(fs) > o.h + 0.02) {
+          fs *= 0.93;
+          L = estLines(t, o.w, fs, o.ls);
+        }
+        fs = Math.round(fs * 10) / 10;
+        if (o.lh) lh = Math.round(o.lh * (fs / fs0) * 10) / 10;
+      }
+    }
+    return s.addText(t, {
+      x: o.x, y: o.y, w: o.w, h: o.h,
+      fontFace: o.font || F.body, fontSize: fs, color: o.color,
+      bold: o.bold, italic: o.italic, align: o.align, valign: o.valign,
+      charSpacing: o.ls, lineSpacing: lh, rotate: o.rotate,
+      margin: o.margin !== undefined ? o.margin : 0,
+    });
+  };
   const box = (s, o) => s.addShape(o.round ? pres.shapes.ROUNDED_RECTANGLE : pres.shapes.RECTANGLE, {
     x: o.x, y: o.y, w: o.w, h: o.h,
     rectRadius: o.round ? (o.r != null ? o.r : (R || 0.06)) : undefined,
@@ -84,6 +123,14 @@ function createDeck(themeName, meta = {}) {
     s.background = { color: pal(hero).bg };
     return s;
   }
+
+  // 网格底纹:仅含 c.grid 令牌的主题启用(vic-medical 签名;40px≈0.556in,颜色已按低透明度预混进令牌)
+  const gridBg = s => {
+    if (!C.grid) return;
+    const g = 0.556;
+    for (let gx = g; gx < PW - 0.01; gx += g) lineV(s, gx, 0, PH, C.grid, 0.75);
+    for (let gy = g; gy < PH - 0.01; gy += g) lineH(s, 0, gy, PW, C.grid, 0.75);
+  };
 
   // ---------- 编号形态(num DNA) ----------
   // 在 (x,y) 处画第 i 项(从 0 起)的编号,占位约 size×size。返回横向占用宽度。
@@ -144,6 +191,7 @@ function createDeck(themeName, meta = {}) {
     bareRows: "none", airyRows: "none", centerLines: "none", centerThin: "none",
     dataRows: "panel", lineNumbers: "panel", outputRows: "none", colorTicks: "panel",
     squareGrid: "panel", bigDots: "panel", stepTimeline: "panel", geoShapes: "panel",
+    edgeCards: "edgeCard",
   };
   function itemBox(s, p, x, y, w, h, i) {
     switch (CONTAINER_OF[L.list] || "softCard") {
@@ -155,6 +203,10 @@ function createDeck(themeName, meta = {}) {
       case "ruleTop": lineH(s, x, y, w, p.line, 1.4); break;
       case "dashTop": lineH(s, x, y, w, p.t3, 1.2, "dash"); break;
       case "panel": box(s, { x, y, w, h, fill: C.surface }); break;
+      case "edgeCard":
+        box(s, { x, y, w, h, fill: C.surface, round: R > 0 });
+        box(s, { x, y: y + 0.04, w: 0.045, h: h - 0.08, fill: p.ac });
+        break;
       case "none": default: break;
     }
   }
@@ -310,6 +362,13 @@ function createDeck(themeName, meta = {}) {
       if (o.kicker) txt(s, o.kicker, { x: MX, y: 0.5, w: CW, h: 0.3, font: F.mono, fs: sc(10.5), ls: 2.5, color: p.t2 });
       txt(s, runs(o.title, p), { x: MX + 0.8, y: 0.95, w: CW - 0.8, h: 0.85, font: F.title, fs: o.titleSize || sc(32), bold: true });
       return 2.35;
+    },
+    edgeTitle(s, p, o) {
+      gridBg(s);
+      if (o.kicker) txt(s, "// " + o.kicker, { x: MX, y: 0.44, w: CW, h: 0.3, font: F.mono, fs: sc(12), ls: 2, color: p.ac });
+      box(s, { x: MX, y: 0.86, w: 0.055, h: 0.46, fill: p.ac });
+      txt(s, runs(o.title, p), { x: MX + 0.24, y: 0.79, w: CW - 0.24, h: 0.62, font: F.title, fs: o.titleSize || sc(29), bold: true });
+      return 1.62;
     },
     centerNone(s, p, o) {
       if (o.kicker) txt(s, o.kicker, { x: MX, y: 0.85, w: CW, h: 0.35, fs: sc(12), ls: 3, color: p.t3, align: "center" });
@@ -467,7 +526,7 @@ function createDeck(themeName, meta = {}) {
   // ---------- ctx(传给 deck_styles 的构图工具箱) ----------
   const ctx = {
     pres, T, C, F, R, L, meta, themeName, PW, PH, MX, CW, FOOTER,
-    pal, sc, txt, box, oval, tri, lineH, lineV, runs, drawIndex, itemBox, header, footer, newSlide, ROMAN,
+    pal, sc, txt, box, oval, tri, lineH, lineV, runs, drawIndex, itemBox, header, footer, newSlide, gridBg, ROMAN, estW, estLines,
   };
   const comp = STYLES[themeName] || {};
   const fb = STYLES.__fallback;
@@ -496,8 +555,10 @@ function createDeck(themeName, meta = {}) {
       const cols = items.length <= 4 ? 2 : 3, rows0 = Math.ceil(items.length / cols), gap = 0.3;
       const w = (CW - gap * (cols - 1)) / cols;
       const h = Math.min(1.7, ((PH - top - 0.75) - gap * (rows0 - 1)) / Math.max(rows0, 1));
+      // 网格实际占高不足时轻度下移居中,避免下半页大片空白
+      const yOff = Math.min(0.45, Math.max(0, (PH - top - 0.75 - rows0 * h - (rows0 - 1) * gap) / 2));
       items.forEach((it, i) => {
-        const x = MX + (i % cols) * (w + gap), y = top + Math.floor(i / cols) * (h + gap);
+        const x = MX + (i % cols) * (w + gap), y = top + yOff + Math.floor(i / cols) * (h + gap);
         itemBox(s, p, x, y, w, h, i);
         drawIndex(s, p, i, x + 0.28, y + 0.2, 0.42, it[0]);
         txt(s, it[1], { x: x + 0.28, y: y + 0.72, w: w - 0.56, h: 0.5, fs: sc(15), bold: true, color: p.t1, font: F.title });
@@ -513,7 +574,7 @@ function createDeck(themeName, meta = {}) {
   S.contentRows = function (o) {
     const p = pal(false), s = newSlide(false);
     const top = header(s, p, o);
-    renderRows(s, p, o.rows || [], top, PH - (["statusbar", "statusline"].includes(L.footer) ? 0.6 : 0.85));
+    renderRows(s, p, o.rows || [], top, PH - (o.footnote ? 1.1 : (["statusbar", "statusline"].includes(L.footer) ? 0.6 : 0.85)));
     if (o.footnote) txt(s, o.footnote, { x: MX, y: PH - 0.86, w: CW - 2, h: 0.28, fs: sc(11), italic: true, color: p.t3 });
     footer(s, p, o.page);
     if (o.notes) s.addNotes(o.notes);
@@ -524,7 +585,16 @@ function createDeck(themeName, meta = {}) {
   S.twoColumn = function (o) {
     const p = pal(false), s = newSlide(false);
     const top = header(s, p, o);
-    const h = PH - top - 0.85, w = (CW - 0.4) / 2;
+    const w = (CW - 0.4) / 2;
+    // 面板高按内容收缩(下限 3.0),稀内容时不再拖出半页空箱
+    const sideH = side => {
+      if (!side) return 0;
+      let ch = side.head ? 0.92 : 0.32;
+      if (side.body) { const f = sc(side.mono ? 11.5 : 13); ch += estLines(side.body, w - 0.7, f) * f * 1.6 / 72; }
+      if (side.items) ch += side.items.reduce((a, t0) => a + estLines(t0, w - 0.9, sc(13)) * sc(13) * 1.25 / 72 + 0.11, 0);
+      return ch + 0.35;
+    };
+    const h = Math.min(PH - top - 0.85, Math.max(3.0, sideH(o.left), sideH(o.right)));
     [[o.left, MX], [o.right, MX + w + 0.4]].forEach(([side, x], si) => {
       if (!side) return;
       if (side.mono) {
@@ -550,7 +620,10 @@ function createDeck(themeName, meta = {}) {
     const p = pal(false), s = newSlide(false);
     const top = header(s, p, o);
     const cards = o.cards || [], gap = 0.35, n = Math.max(cards.length, 1);
-    const w = (CW - gap * (n - 1)) / n, h = PH - top - 0.9;
+    const w = (CW - gap * (n - 1)) / n;
+    // 卡高按最长内容估算(下限 2.4),不再固定撑满内容区
+    const descH = cards.reduce((m, cd) => Math.max(m, cd.desc ? estLines(cd.desc, w - 0.6, sc(12)) * sc(12) * 1.6 / 72 : 0), 0);
+    const h = Math.min(PH - top - 0.9, Math.max(2.4, 1.75 + descH + 0.3));
     cards.forEach((cd, i) => {
       const x = MX + i * (w + gap);
       itemBox(s, p, x, top, w, h, i);
@@ -568,7 +641,9 @@ function createDeck(themeName, meta = {}) {
   S.comparison = function (o) {
     const p = pal(false), s = newSlide(false);
     const top = header(s, p, o);
-    const h = PH - top - 0.85, w = (CW - 0.4) / 2;
+    const w = (CW - 0.4) / 2;
+    const itemsH = side => side && side.items ? side.items.reduce((a, t0) => a + estLines(t0, w - 0.9, sc(13)) * sc(13) * 1.25 / 72 + 0.11, 0) : 0;
+    const h = Math.min(PH - top - 0.85, Math.max(3.0, 1.25 + Math.max(itemsH(o.left), itemsH(o.right)) + 0.35));
     [[o.left, MX, o.left && o.left.bad ? C.bad : p.t3],
      [o.right, MX + w + 0.4, o.right && o.right.good ? C.good : p.ac]].forEach(([side, x, tagColor], si) => {
       if (!side) return;
@@ -616,17 +691,18 @@ function createDeck(themeName, meta = {}) {
     const top = header(s, p, o);
     const kpis = o.kpis || [], gap = 0.35, n = Math.max(kpis.length, 1);
     const w = (CW - gap * (n - 1)) / n, h = Math.min(3.2, PH - top - 1.0);
+    const y0 = top + Math.max(0, (PH - 1.0 - top - h) / 2); // 卡片行在内容区垂直居中
     kpis.forEach((k, i) => {
       const x = MX + i * (w + gap);
-      itemBox(s, p, x, top, w, h, i);
-      txt(s, k.label || "", { x: x + 0.28, y: top + 0.26, w: w - 0.56, h: 0.32, font: F.mono, fs: sc(10.5), ls: 1.5, color: p.t3 });
+      itemBox(s, p, x, y0, w, h, i);
+      txt(s, k.label || "", { x: x + 0.28, y: y0 + 0.26, w: w - 0.56, h: 0.32, font: F.mono, fs: sc(10.5), ls: 1.5, color: p.t3 });
       const rr = [{ text: String(k.value), options: { color: p.t1 } }];
       if (k.unit) rr.push({ text: " " + k.unit, options: { color: p.t2, fontSize: sc(15) } });
-      txt(s, rr, { x: x + 0.26, y: top + 0.75, w: w - 0.52, h: 1.15, font: F.num, fs: sc(38), bold: true });
+      txt(s, rr, { x: x + 0.26, y: y0 + 0.75, w: w - 0.52, h: 1.15, font: F.num, fs: sc(38), bold: true });
       if (k.delta) {
         const dc = k.good === false ? C.bad : k.good ? C.good : p.t2;
         const ar = k.dir === "down" ? "↓ " : k.dir === "flat" ? "→ " : "↑ ";
-        txt(s, ar + k.delta, { x: x + 0.28, y: top + h - 0.6, w: w - 0.56, h: 0.36, fs: sc(12.5), bold: true, color: dc });
+        txt(s, ar + k.delta, { x: x + 0.28, y: y0 + h - 0.6, w: w - 0.56, h: 0.36, fs: sc(12.5), bold: true, color: dc });
       }
     });
     footer(s, p, o.page);
@@ -638,8 +714,10 @@ function createDeck(themeName, meta = {}) {
   S.timeline = function (o) {
     const p = pal(false), s = newSlide(false);
     const top = header(s, p, o);
-    const nodes = o.nodes || [], n = Math.max(nodes.length, 1);
-    const lineY = top + 1.05, step = CW / n;
+    const nodes = o.nodes || [], n = Math.max(nodes.length, 1), step = CW / n;
+    // 时间线整块(tag+节点+head+desc)在内容区垂直居中,不再挤在上 1/3
+    const descH = Math.min(2.0, nodes.reduce((m, nd) => Math.max(m, nd.desc ? estLines(nd.desc, step - 0.3, sc(11)) * sc(11) * 1.55 / 72 : 0), 0));
+    const lineY = top + 0.6 + Math.max(0, (PH - 0.85 - top - (1.45 + descH)) / 2);
     lineH(s, MX + step / 2, lineY, CW - step, p.line, 2);
     nodes.forEach((nd, i) => {
       const cxx = MX + i * step + step / 2;
@@ -677,7 +755,13 @@ function createDeck(themeName, meta = {}) {
       align: ci > 0 && numeric(cell) ? "right" : "left" } })));
     s.addTable([headers, ...rows], { x: MX, y: top + 0.05, w: CW, colW: o.colW,
       border: { type: "solid", pt: 0.5, color: C.border }, autoPage: false });
-    if (o.source) txt(s, "来源: " + o.source, { x: MX, y: PH - 0.85, w: CW, h: 0.28, font: F.mono, fs: sc(9.5), color: p.t3 });
+    if (o.source) {
+      // 来源脚注挂在表格底部下方,不再钉死在页底;表高按各行最长单元格折行数估算
+      const nc = Math.max((o.headers || []).length, 1);
+      const rowH = r => Math.max(...r.map((cell, ci) => estLines(cell, (o.colW ? o.colW[ci] : CW / nc) - 0.17, sc(11.5)))) * sc(11.5) * 1.25 / 72 + 0.17;
+      const tblH = 0.45 + (o.rows || []).reduce((a, r) => a + rowH(r), 0);
+      txt(s, "来源: " + o.source, { x: MX, y: Math.min(PH - 0.8, top + 0.05 + tblH + 0.12), w: CW, h: 0.28, font: F.mono, fs: sc(9.5), color: p.t3 });
+    }
     footer(s, p, o.page);
     if (o.notes) s.addNotes(o.notes);
     return s;
@@ -688,7 +772,10 @@ function createDeck(themeName, meta = {}) {
     const p = pal(false), s = newSlide(false);
     const top = header(s, p, o);
     const steps = o.steps || [], n = Math.max(steps.length, 1), aw = 0.42;
-    const w = (CW - aw * (n - 1)) / n, h = PH - top - 1.1;
+    const w = (CW - aw * (n - 1)) / n;
+    // 卡高按最长步骤描述估算(下限 2.6),箭头随卡高中点自然跟随
+    const descH = steps.reduce((m, st) => Math.max(m, st.desc ? estLines(st.desc, w - 0.52, sc(11)) * sc(11) * 1.55 / 72 : 0), 0);
+    const h = Math.min(PH - top - 1.1, Math.max(2.6, 1.68 + descH + 0.3));
     steps.forEach((st, i) => {
       const x = MX + i * (w + aw);
       itemBox(s, p, x, top, w, h, i);

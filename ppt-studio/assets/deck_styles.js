@@ -1281,6 +1281,81 @@ const tokyoNight = {
   bigstat(c, o) { return barStat(c, o, { numColor: "ac" }); },
 };
 
+// ======================================================================
+// vic-medical — 维克医学。深色网格底纹、// 注释 kicker、信号青;
+// 分节页 = 幽灵大编号 + 青色 PART chip + 左竖条 + 底部进度条。
+// divider 扩展字段(可选):progress = [[标签, 当前节?], ...];tone = "bad"|"warn" 整页换强调色(合规红线页)。
+// ======================================================================
+const vicMedical = {
+  cover(c, o) {
+    const p = c.pal(true), s = c.newSlide(true);
+    c.gridBg(s);
+    if (o.tag) c.txt(s, o.tag, { x: c.PW - 4.8, y: 0.5, w: 3.95, h: 0.32, font: c.F.mono, fs: c.sc(10), ls: 2, color: p.t3, align: "right" });
+    if (o.kicker) c.txt(s, o.kicker, { x: c.MX, y: 2.08, w: c.CW, h: 0.35, font: c.F.mono, fs: c.sc(14), ls: 4, color: p.ac });
+    c.txt(s, c.runs(o.title, p), { x: c.MX, y: 2.55, w: c.CW, h: 2.25, font: c.F.title, fs: o.titleSize || c.sc(56), bold: true, lh: (o.titleSize || c.sc(56)) * 1.22 });
+    c.box(s, { x: c.MX, y: 4.72, w: 1.11, h: 0.055, fill: p.ac });
+    if (o.subtitle) c.txt(s, o.subtitle, { x: c.MX, y: 5.02, w: 11, h: 0.82, fs: c.sc(19), color: p.t2 });
+    if (o.speaker) c.txt(s, o.speaker, { x: c.MX, y: 5.98, w: 9, h: 0.4, fs: c.sc(14), color: p.t3 });
+    c.footer(s, p, null);
+    if (o.notes) s.addNotes(o.notes);
+    return s;
+  },
+  divider(c, o) {
+    const p = c.pal(true), s = c.newSlide(true);
+    c.gridBg(s);
+    const AC = (o.tone && c.C[o.tone]) || p.ac;
+    const no2 = o.no != null ? String(o.no).padStart(2, "0") : null;
+    if (no2) c.txt(s, no2, { x: c.PW - 5.75, y: 0.62, w: 5.6, h: 4.1, font: c.F.mono, fs: c.sc(275), bold: true, color: o.tone ? c.C.border : c.C.ghost, align: "right" });
+    c.box(s, { x: c.MX, y: 0.58, w: 1.5, h: 0.42, fill: AC });
+    c.txt(s, no2 ? "PART " + no2 : (o.kicker || "PART"), { x: c.MX, y: 0.58, w: 1.5, h: 0.42, font: c.F.mono, fs: c.sc(13), bold: true, ls: 2, color: c.C.bg, align: "center", valign: "middle" });
+    c.box(s, { x: c.MX, y: 2.39, w: 0.07, h: 2.0, fill: AC });
+    c.txt(s, c.runs(o.title, p), { x: c.MX + 0.33, y: 2.32, w: c.CW - 0.4, h: 1.85, font: c.F.title, fs: o.titleSize || c.sc(44), bold: true, lh: (o.titleSize || c.sc(44)) * 1.3 });
+    if (o.sub) c.txt(s, o.sub, { x: c.MX + 0.33, y: 4.85, w: c.CW - 0.4, h: 0.5, fs: c.sc(18), color: p.t2 });
+    const prog = o.progress || [];
+    if (prog.length) {
+      const gap = 0.28, w = (c.CW - gap * (prog.length - 1)) / prog.length;
+      prog.forEach((seg, i) => {
+        const x = c.MX + i * (w + gap), on = seg[1] === true;
+        c.box(s, { x, y: 6.11, w, h: 0.055, fill: on ? AC : c.C.border });
+        c.txt(s, seg[0], { x, y: 6.26, w, h: 0.32, fs: c.sc(13), bold: on, color: on ? p.t1 : p.t3 });
+      });
+    }
+    c.footer(s, p, o.page);
+    if (o.notes) s.addNotes(o.notes);
+    return s;
+  },
+  statement(c, o) {
+    const p = c.pal(true), s = c.newSlide(true);
+    c.gridBg(s);
+    if (o.kicker) c.txt(s, "// " + o.kicker, { x: c.MX, y: 0.6, w: c.CW, h: 0.32, font: c.F.mono, fs: c.sc(13), ls: 2, color: p.ac });
+    c.box(s, { x: c.MX, y: 1.75, w: c.CW, h: 3.55, fill: c.C.surface, round: c.R > 0 });
+    c.box(s, { x: c.MX, y: 1.79, w: 0.06, h: 3.47, fill: p.ac });
+    c.txt(s, c.runs(o.title, p), { x: c.MX + 0.55, y: 2.1, w: c.CW - 1.1, h: 2.2, font: c.F.title, fs: o.titleSize || c.sc(34), bold: true, lh: (o.titleSize || c.sc(34)) * 1.4 });
+    if (o.sub) c.txt(s, o.sub, { x: c.MX + 0.55, y: 4.55, w: c.CW - 1.1, h: 0.5, fs: c.sc(15), color: p.t2 });
+    c.footer(s, p, o.page);
+    if (o.notes) s.addNotes(o.notes);
+    return s;
+  },
+  closing(c, o) {
+    const p = c.pal(true), s = c.newSlide(true);
+    c.gridBg(s);
+    if (o.kicker) c.txt(s, "// " + o.kicker, { x: c.MX, y: 1.85, w: c.CW, h: 0.35, font: c.F.mono, fs: c.sc(13), ls: 3, color: p.ac });
+    c.txt(s, c.runs(o.title, p), { x: c.MX, y: 2.45, w: c.CW, h: 1.7, font: c.F.title, fs: o.titleSize || c.sc(44), bold: true, lh: (o.titleSize || c.sc(44)) * 1.22 });
+    c.box(s, { x: c.MX, y: 4.35, w: 1.11, h: 0.055, fill: p.ac });
+    if (o.sub) c.txt(s, o.sub, { x: c.MX, y: 4.62, w: 10.5, h: 0.5, fs: c.sc(16), color: p.t2 });
+    if (o.cta) {
+      // chip 宽度用真实文本宽度估算(mono 中英混排下按字符数一刀切会宽出一倍)
+      const cw = Math.min(c.CW, Math.max(2.0, c.estW(o.cta, c.sc(13), 2) * 1.1 + 0.6));
+      c.box(s, { x: c.MX, y: 5.45, w: cw, h: 0.5, fill: p.ac });
+      c.txt(s, o.cta, { x: c.MX, y: 5.45, w: cw, h: 0.5, font: c.F.mono, fs: c.sc(13), bold: true, ls: 2, color: c.C.bg, align: "center", valign: "middle" });
+    }
+    c.footer(s, p, o.page);
+    if (o.notes) s.addNotes(o.notes);
+    return s;
+  },
+  bigstat(c, o) { return barStat(c, o, { numColor: "ac" }); },
+};
+
 module.exports = {
   __fallback,
   "mckinsey": mckinsey,
@@ -1305,4 +1380,5 @@ module.exports = {
   "bauhaus": bauhausT,
   "keynote-light": keynoteLight,
   "tokyo-night": tokyoNight,
+  "vic-medical": vicMedical,
 };
