@@ -8,6 +8,7 @@ A personal collection of Claude Skills. Each subdirectory is a complete, self-co
 
 | Skill | Summary | Docs |
 |---|---|---|
+| [find-doctor](find-doctor/) | Healthcare navigation for patients in Chinese cities: structured intake, multi-source verification, tiered doctor options, and an actionable visit checklist | [English](find-doctor/README.en.md) · [中文](find-doctor/README.md) |
 | [ppt-studio](ppt-studio/) | 9-step human-in-the-loop workflow × 23 design themes × 15 layouts, generates editable .pptx | [English](ppt-studio/README.en.md) · [中文](ppt-studio/README.md) |
 
 ## Installation (general)
@@ -22,4 +23,4 @@ Restart Claude Code and the skill will trigger on matching requests. See each sk
 
 ## License
 
-Each skill ships its own license inside its directory (ppt-studio is MIT).
+License terms, when provided, live in each skill directory (`ppt-studio` is MIT). `find-doctor` currently has no separate license included.

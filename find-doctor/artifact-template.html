@@ -1,0 +1,239 @@
+<!--
+  Artifact 模板：「我的就医方案」可刷新看板
+  使用方法：SKILL 在 Step 7 调用 mcp__cowork__create_artifact 时，
+           用此模板作为骨架，把所有 {{...}} 占位符替换为实际数据。
+
+  设计原则：
+  - 自包含 HTML，CSS 内联
+  - 用 CSS 变量保证 dark/light 兼容
+  - 不依赖外部 JS（除非需要 Chart.js 等允许的 CDN）
+  - 患者可以保存离线查看
+
+  占位符约定：
+  - {{...}}              → 单值替换
+  - {{#each list}}...{{/each}} → 列表循环（生成时手动展开即可）
+-->
+<style>
+  :root {
+    --bg: var(--color-background, #ffffff);
+    --fg: var(--color-foreground, #1a1a1a);
+    --muted: var(--color-muted, #6b7280);
+    --border: var(--color-border, #e5e7eb);
+    --card: var(--color-card, #f9fafb);
+    --gold: #f59e0b;
+    --silver: #94a3b8;
+    --bronze: #b45309;
+    --green: #10b981;
+    --red: #ef4444;
+    --yellow: #facc15;
+    --primary: #2563eb;
+  }
+  body, .doctor-board { background: var(--bg); color: var(--fg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; line-height: 1.6; }
+  .doctor-board { max-width: 920px; margin: 0 auto; padding: 16px; }
+  h1, h2, h3 { color: var(--fg); margin-top: 0; }
+  h1 { font-size: 22px; }
+  h2 { font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-top: 24px; }
+  h3 { font-size: 16px; }
+  .meta { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+  .section { margin: 20px 0; }
+  .profile { background: var(--card); border-radius: 8px; padding: 16px; }
+  .profile ul { margin: 8px 0; padding-left: 20px; }
+  .profile li { margin: 4px 0; font-size: 14px; }
+
+  .tier-label { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; color: white; margin-bottom: 8px; }
+  .tier-gold { background: var(--gold); }
+  .tier-silver { background: var(--silver); }
+  .tier-bronze { background: var(--bronze); }
+
+  .doctor-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin: 12px 0; }
+  .doctor-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .doctor-name { font-size: 18px; font-weight: 600; color: var(--fg); }
+  .doctor-position { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; margin-left: 6px; }
+  .badge-verified { background: var(--green); color: white; }
+  .badge-partial { background: var(--yellow); color: #78350f; }
+  .badge-warn { background: var(--red); color: white; }
+
+  .field { margin: 8px 0; font-size: 14px; }
+  .field-label { color: var(--muted); display: inline-block; min-width: 70px; }
+  .field-value { color: var(--fg); }
+
+  .reasons { background: rgba(37, 99, 235, 0.08); border-left: 3px solid var(--primary); padding: 8px 12px; margin: 8px 0; font-size: 13px; }
+
+  .sources { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .sources a { color: var(--primary); text-decoration: none; }
+  .sources a:hover { text-decoration: underline; }
+
+  .checklist { background: var(--card); border-radius: 6px; padding: 12px; margin-top: 12px; font-size: 13px; }
+  .checklist-title { font-weight: 600; margin-bottom: 6px; font-size: 13px; color: var(--fg); }
+  .checklist ul { margin: 4px 0; padding-left: 20px; }
+  .checklist li { margin: 3px 0; }
+
+  .risk { background: rgba(239, 68, 68, 0.08); border-left: 3px solid var(--red); padding: 8px 12px; margin: 8px 0; font-size: 13px; }
+  .red-flags { background: rgba(239, 68, 68, 0.08); border: 1px solid var(--red); border-radius: 8px; padding: 16px; margin-top: 24px; }
+  .red-flags h2 { color: var(--red); border-bottom-color: var(--red); }
+
+  .difficulty { color: var(--gold); font-size: 14px; letter-spacing: 1px; }
+
+  .disclaimer { background: var(--card); border-radius: 8px; padding: 16px; margin-top: 32px; font-size: 13px; color: var(--muted); border-top: 3px solid var(--primary); }
+  .disclaimer ol { margin: 8px 0; padding-left: 20px; }
+  .disclaimer li { margin: 4px 0; }
+
+  .empty-state { color: var(--muted); font-style: italic; padding: 12px; text-align: center; }
+</style>
+
+<div class="doctor-board">
+
+  <!-- 头部 -->
+  <h1>🩺 我的就医方案</h1>
+  <div class="meta">
+    生成时间：{{generated_at}} ｜ 城市范围：{{cities}} ｜ 病种类型：{{disease_type}}
+  </div>
+
+  <!-- Section 1: 患者画像 -->
+  <div class="section profile">
+    <h3>📋 你的情况摘要</h3>
+    <ul>
+      <li><strong>疾病/症状：</strong>{{disease_summary}}</li>
+      <li><strong>确诊状态：</strong>{{diagnosed}}</li>
+      <li><strong>已做检查：</strong>{{exams}}</li>
+      <li><strong>治疗历史：</strong>{{treatment_history}}</li>
+      <li><strong>紧迫度：</strong>{{urgency}}</li>
+      <li><strong>预算：</strong>{{budget}}</li>
+      <li><strong>医保：</strong>{{insurance}}</li>
+    </ul>
+  </div>
+
+  <!-- Section 2: 首选 -->
+  <div class="section">
+    <h2><span class="tier-label tier-gold">🥇 首选推荐</span></h2>
+    <div class="empty-state-or-cards">
+      <!-- {{#each top_picks}} -->
+      <div class="doctor-card">
+        <div class="doctor-header">
+          <div>
+            <div class="doctor-name">
+              {{name}}
+              <span class="badge badge-verified">已 2 源验证</span>
+              <!-- 或 badge-partial / badge-warn -->
+            </div>
+            <div class="doctor-position">{{hospital}} · {{department}} · {{title}}</div>
+          </div>
+          <div class="difficulty" title="挂号难度">{{difficulty_stars}}</div>
+        </div>
+
+        <div class="field"><span class="field-label">专长：</span><span class="field-value">{{specialty}}</span></div>
+
+        <div class="reasons">
+          <strong>为什么推荐 TA：</strong>
+          <ul style="margin: 4px 0 0; padding-left: 20px;">
+            <!-- {{#each reasons}} -->
+            <li>{{reason}}</li>
+            <!-- {{/each}} -->
+          </ul>
+        </div>
+
+        <div class="sources">
+          来源验证：
+          <!-- {{#each sources}} -->
+          <a href="{{url}}" target="_blank" rel="noopener">[{{source_name}}]</a>
+          <!-- {{/each}} -->
+        </div>
+
+        <div class="checklist">
+          <div class="checklist-title">✅ 就诊清单</div>
+          <ul>
+            <li><strong>预约入口：</strong>{{appointment_channel}}（<a href="{{appointment_url}}" target="_blank" rel="noopener">点此前往</a>）</li>
+            <li><strong>建议时间：</strong>{{suggested_time}}</li>
+            <li><strong>需带材料：</strong>{{materials_needed}}</li>
+            <li><strong>建议提的 3 个问题：</strong>
+              <ol>
+                <!-- {{#each questions}} -->
+                <li>{{question}}</li>
+                <!-- {{/each}} -->
+              </ol>
+            </li>
+            <li><strong>预算预估：</strong>{{cost_estimate}}</li>
+          </ul>
+        </div>
+
+        <!-- {{#if risks}} -->
+        <div class="risk">
+          ⚠️ <strong>风险提示：</strong>{{risks}}
+        </div>
+        <!-- {{/if}} -->
+      </div>
+      <!-- {{/each}} -->
+    </div>
+  </div>
+
+  <!-- Section 3: 备选 -->
+  <div class="section">
+    <h2><span class="tier-label tier-silver">🥈 备选方案</span></h2>
+    <div class="meta">水平相近，但更容易挂到的医生</div>
+    <!-- {{#each alternatives}} -->
+    <div class="doctor-card">
+      <div class="doctor-header">
+        <div>
+          <div class="doctor-name">{{name}} <span class="badge badge-verified">已验证</span></div>
+          <div class="doctor-position">{{hospital}} · {{department}} · {{title}}</div>
+        </div>
+        <div class="difficulty">{{difficulty_stars}}</div>
+      </div>
+      <div class="field"><span class="field-label">专长：</span><span class="field-value">{{specialty}}</span></div>
+      <div class="reasons">{{reason_summary}}</div>
+      <div class="sources">
+        <!-- {{#each sources}} -->
+        <a href="{{url}}" target="_blank" rel="noopener">[{{source_name}}]</a>
+        <!-- {{/each}} -->
+      </div>
+    </div>
+    <!-- {{/each}} -->
+  </div>
+
+  <!-- Section 4: 实用替代 -->
+  <div class="section">
+    <h2><span class="tier-label tier-bronze">🥉 实用替代</span></h2>
+    <div class="meta">首选挂不上号时的现实方案——专家学生 / 同组副主任 / 同院同专业</div>
+    <!-- {{#each backup_options}} -->
+    <div class="doctor-card">
+      <div class="doctor-header">
+        <div>
+          <div class="doctor-name">{{name}}</div>
+          <div class="doctor-position">{{hospital}} · {{department}} · {{title}}</div>
+        </div>
+        <div class="difficulty">{{difficulty_stars}}</div>
+      </div>
+      <div class="field"><span class="field-label">关系：</span><span class="field-value">{{relation_to_top_pick}}</span></div>
+      <div class="field"><span class="field-label">专长：</span><span class="field-value">{{specialty}}</span></div>
+      <div class="reasons">{{reason_summary}}</div>
+    </div>
+    <!-- {{/each}} -->
+  </div>
+
+  <!-- Section 5: 红旗信号 -->
+  <div class="red-flags">
+    <h2>🚩 警示信号（请远离）</h2>
+    <ul>
+      <li><strong>"加号"、"特需高价号"、"代挂号"、"内部渠道"</strong>—— 都是黄牛，100% 远离</li>
+      <li><strong>"包治某病"、"祖传秘方"、"根治 X 病"</strong>—— 几乎都是骗子</li>
+      <li><strong>只在小红书/抖音活跃的"专家"</strong>—— 警惕营销型医生，无学术产出不可信</li>
+      <li><strong>朋友圈/微信群推广的"专家"</strong>—— 不要轻信</li>
+      <li><strong>推销保健品/医疗器械的医生</strong>—— 远离</li>
+    </ul>
+  </div>
+
+  <!-- Section 6: 风险免责 -->
+  <div class="disclaimer">
+    <strong>📌 重要说明</strong>
+    <ol>
+      <li>以上推荐基于公开信息，可能存在信息滞后（医生调动、退休等）</li>
+      <li>实际就诊以医院当日安排为准，挂号前请再次确认医生出诊信息</li>
+      <li>严重病情请同时寻求线下医生面诊，不要完全依赖 AI 推荐</li>
+      <li>所有医生信息均建议在挂号前到医院官网二次核实</li>
+      <li>如挂号失败，回到对话告诉我，我会帮你启动备胎方案</li>
+      <li>本看板不构成医疗建议，仅作为信息整理参考</li>
+    </ol>
+  </div>
+
+</div>
