@@ -8,6 +8,7 @@
 
 | Skill | 简介 | 文档 |
 |---|---|---|
+| [find-doctor](find-doctor/) | 面向普通患者的中国城市就医导航：结构化问诊、多源验证、分层医生推荐与可执行就诊清单 | [README](find-doctor/README.md) · [English](find-doctor/README.en.md) |
 | [ppt-studio](ppt-studio/) | 9 步 Human-in-the-loop 工作流 × 23 设计主题 × 15 版式,生成可编辑的 .pptx | [README](ppt-studio/README.md) · [English](ppt-studio/README.en.md) |
 
 ## 安装(通用)
@@ -22,4 +23,4 @@ cp -r Skill_sharing/<skill-name> ~/.claude/skills/
 
 ## License
 
-各 skill 目录内附各自的 License(ppt-studio 为 MIT)。
+各 skill 的许可条款以其目录内的文件为准（`ppt-studio` 为 MIT）。`find-doctor` 当前未附独立许可证。
