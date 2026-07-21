@@ -31,6 +31,18 @@ cp -r find-doctor ~/.claude/skills/
 - [reference.md](reference.md)：病种分流、信息源优先级、评分权重、重点医院和风险提示
 - [artifact-template.html](artifact-template.html)：医生推荐结果的可保存 HTML 看板模板
 
+## 示例输出
+
+以下为“上海垂体瘤手术”场景的**历史示例**（生成于 2026-06-24），展示技能如何把前置信息、分层推荐和行动清单组织为可保存看板。它仅用于说明输出形式，**不构成当前医生推荐、诊断或治疗建议**；其中的医生资料、出诊、费用与治疗路径均可能变化，使用前必须通过医院官方渠道和线下面诊再次核实。
+
+[下载完整示例 PDF](examples/pituitary-tumor-surgery/pituitary-tumor-surgery-example.pdf) · [示例说明](examples/pituitary-tumor-surgery/README.md)
+
+| 病情摘要与前置提醒 | 分层推荐卡片 |
+|---|---|
+| ![病情摘要与前置提醒](examples/pituitary-tumor-surgery/01-case-overview.png) | ![分层推荐卡片](examples/pituitary-tumor-surgery/02-tiered-recommendation.png) |
+
+![可执行清单](examples/pituitary-tumor-surgery/03-action-checklist.png)
+
 ## 使用原则
 
 请不要输入真实姓名、身份证号、手机号、详细住址或未脱敏报告。医生任职和出诊信息可能变化，预约前必须通过医院官方渠道再次确认。不要使用加号、代挂号或所谓内部渠道。

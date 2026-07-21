@@ -31,6 +31,18 @@ Restart Claude Code. The skill can then trigger on requests such as finding a do
 - [reference.md](reference.md): triage, source priority, scoring weights, key hospitals, and warning signs
 - [artifact-template.html](artifact-template.html): saveable HTML dashboard template for recommendations
 
+## Example output
+
+The following **historical example** was generated on 2026-06-24 for a pituitary-tumor surgery scenario in Shanghai. It shows how the skill packages an intake summary, tiered options, and a next-step checklist into a saveable dashboard. It is only a demonstration of the output format and **is not a current clinician recommendation, diagnosis, or treatment advice**. Clinician details, appointments, prices, and care pathways may change; confirm them through official hospital channels and an in-person clinician before acting.
+
+[Download the full example PDF](examples/pituitary-tumor-surgery/pituitary-tumor-surgery-example.pdf) · [Example notes](examples/pituitary-tumor-surgery/README.md)
+
+| Intake summary and care-path reminder | Tiered recommendation card |
+|---|---|
+| ![Intake summary and care-path reminder](examples/pituitary-tumor-surgery/01-case-overview.png) | ![Tiered recommendation card](examples/pituitary-tumor-surgery/02-tiered-recommendation.png) |
+
+![Action checklist](examples/pituitary-tumor-surgery/03-action-checklist.png)
+
 ## Safe use
 
 Do not provide names, identity-card numbers, phone numbers, detailed addresses, or unredacted records. Employment and appointment information can change, so confirm through official hospital channels before booking. Do not use scalpers, paid appointment agents, or purported internal channels.
