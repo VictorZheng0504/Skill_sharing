@@ -1,0 +1,8 @@
+interface:
+  display_name: "医学汇报 PPT"
+  short_description: "文献汇报、临床个案、通用医学报告的原生可编辑 PPT，6 套主题可选"
+  brand_color: "#12305A"
+  default_prompt: "用 med-ppt 把这篇文献做成组会汇报 PPT。"
+
+policy:
+  allow_implicit_invocation: true

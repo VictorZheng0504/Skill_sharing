@@ -10,6 +10,9 @@
 |---|---|---|
 | [find-doctor](find-doctor/) | 面向普通患者的中国城市就医导航：结构化问诊、多源验证、分层医生推荐与可执行就诊清单 | [README](find-doctor/README.md) · [English](find-doctor/README.en.md) |
 | [ppt-studio](ppt-studio/) | 9 步 Human-in-the-loop 工作流 × 23 设计主题 × 15 版式,生成可编辑的 .pptx | [README](ppt-studio/README.md) · [English](ppt-studio/README.en.md) |
+| [med-ppt](med-ppt/) | 医学汇报 PPT(文献汇报 / 病例报告 / 通用医学报告),逐页规划 + 数字出处核对,依赖 ppt-master 排版导出 | [SKILL.md](med-ppt/SKILL.md) · [平台安装](med-ppt/references/platforms.md) |
+| [pubmed-search](pubmed-search/) | 通过 NCBI 官方 API 检索 PubMed、校验 PMID 真伪、生成 Methods 检索报告段 | [SKILL.md](pubmed-search/SKILL.md) |
+| [wechat-draft-push](wechat-draft-push/) | 文章排版成公众号样式并推进草稿箱(只进草稿箱,不发布) | [README](wechat-draft-push/README.md) |
 
 ## 安装(通用)
 
@@ -23,4 +26,4 @@ cp -r Skill_sharing/<skill-name> ~/.claude/skills/
 
 ## License
 
-各 skill 的许可条款以其目录内的文件为准（`ppt-studio` 为 MIT）。`find-doctor` 当前未附独立许可证。
+各 skill 的许可条款以其目录内的文件为准（`ppt-studio` 为 MIT）。`find-doctor` 当前未附独立许可证。 med-ppt 依赖第三方 ppt-master(MIT),需另行安装,见 med-ppt/references/platforms.md。
