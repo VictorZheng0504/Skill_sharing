@@ -36,8 +36,6 @@ PALETTES: Dict[str, dict] = {
                    line='#3a5a85', soft='#f4f6fa'),
     'green':  dict(cn='绿', primary='#108c5a', light='#dcf3e8', highlight='#c4ecd8',
                    line='#17a96e', soft='#f2fbf6'),
-    'red':    dict(cn='红', primary='#b8322a', light='#f8e1de', highlight='#f6cfca',
-                   line='#d2463b', soft='#fdf5f4'),
     'orange': dict(cn='橙', primary='#c75a14', light='#fde8d7', highlight='#fbd9bd',
                    line='#ec7a2c', soft='#fff8f2'),
     'purple': dict(cn='紫', primary='#6a3fc9', light='#ebe3fb', highlight='#ddd0fa',
@@ -692,6 +690,116 @@ LAYOUTS.update({
                      para=make_para(O_BODY), page=(o_page, '</section>\n'), chapter=(o_chapter, '</section>\n'),
                      list=make_list(O_BODY, lambda P: _mark('●', P['primary'], 10),
                                     lambda n, P: _circle_num(n, P))),
+})
+
+
+# ================================================================ 说明文、介绍文专用（p、q）
+
+# ---------------------------------------------------------------- p 图解说明：知识点编号、一句话看懂、划重点、步骤方块
+
+P_BODY = body_style(color='#3f3f3f', ls='0.5px', lh='1.8em', align='left', gap='14px', strong='color: {primary};')
+
+
+def p_section(t, i, P):
+    return (f'<section style="margin: 30px 0 14px;padding-bottom: 8px;border-bottom: 1px dotted {P["line"]};'
+            f'line-height: 1.6em;"><p style="margin: 0;">{_mark(f"知识点 {i:02d}", P["primary"], 12, True, "letter-spacing: 2px;")}</p>'
+            f'<p style="margin: 4px 0 0;"><span leaf="" style="font-size: 16px;font-weight: bold;color: #222222;">'
+            f'{t}</span></p></section>\n')
+
+
+def p_quote(text, P):
+    return (f'<section style="margin: 8px 0 22px;padding: 12px 14px;background: {P["soft"]};'
+            f'border: 1px solid {P["light"]};border-radius: 8px;">'
+            f'<p style="margin: 0 0 4px;">{_mark("💡 一句话看懂", P["primary"], 13)}</p>'
+            f'<p style="margin: 0;line-height: 1.8em;"><span leaf="" style="font-size: 14px;color: #595959;">{text}</span></p>'
+            f'</section>\n')
+
+
+def p_pq(paras, P):
+    return (f'<section style="margin: 20px 0;padding: 12px 14px;border: 1px solid {P["line"]};border-radius: 8px;">'
+            f'<p style="margin: 0 0 6px;"><span style="display: inline-block;padding: 1px 8px;background: {P["primary"]};'
+            f'border-radius: 3px;">{_mark("划重点", "#ffffff", 12, True, "letter-spacing: 1px;")}</span></p>\n'
+            + pq_rows(paras, f'font-size: 15px;color: #222222;{FF}', P['primary'])
+            + '</section>\n')
+
+
+def p_divider(P):
+    return '<section style="margin: 18px 0;border-top: 1px dotted #cccccc;"><span leaf=""><br></span></section>\n'
+
+
+def p_footer(lines, P):
+    rows = ''.join(f'<p style="margin: 4px 0 0;">{_mark(l, "#595959", 13, False)}</p>' for l in lines)
+    return (f'<section style="margin-top: 32px;padding: 12px 14px;background: {P["soft"]};'
+            f'border-left: 3px solid {P["primary"]};line-height: 22px;">{rows}</section>\n')
+
+
+def _square_num(n, P):
+    return (f'<span style="display: inline-block;width: 18px;height: 18px;line-height: 18px;border-radius: 3px;'
+            f'background: {P["primary"]};text-align: center;">{_mark(n, "#ffffff", 12)}</span>')
+
+
+# ---------------------------------------------------------------- q 名片介绍：浅色标题条、简介横幅、亮点框、参数表式列表
+
+Q_BODY = body_style(color='#3f3f3f', ls='1px', lh='1.8em', gap='14px', strong='color: {primary};')
+
+
+def q_section(t, i, P):
+    return (f'<section style="margin: 30px 0 14px;padding: 8px 12px;background: {P["light"]};border-radius: 4px;'
+            f'line-height: 1.6em;">{_mark(f"{i:02d} /", P["primary"], 13, True, "margin-right: 8px;")}'
+            f'<span leaf="" style="font-size: 16px;font-weight: bold;color: {P["primary"]};letter-spacing: 1px;">{t}</span>'
+            f'</section>\n')
+
+
+def q_quote(text, P):
+    return (f'<section style="margin: 8px 0 22px;padding: 14px 16px;background: {P["primary"]};border-radius: 8px;">'
+            f'<p style="margin: 0 0 4px;">{_mark("简　介", P["light"], 12, True, "letter-spacing: 2px;")}</p>'
+            f'<p style="margin: 0;line-height: 1.8em;"><span leaf="" style="font-size: 14px;color: #ffffff;'
+            f'letter-spacing: 0.5px;">{text}</span></p></section>\n')
+
+
+def q_pq(paras, P):
+    return (f'<section style="margin: 20px 0;padding: 12px 14px;background: {P["soft"]};'
+            f'border-top: 2px solid {P["primary"]};">'
+            f'<p style="margin: 0 0 6px;">{_mark("★ 亮点", P["primary"], 13)}</p>\n'
+            + pq_rows(paras, f'font-size: 15px;color: #222222;{FF}', P['primary'])
+            + '</section>\n')
+
+
+def q_divider(P):
+    return (f'<section style="margin: 20px auto;width: 60px;border-top: 3px solid {P["light"]};">'
+            f'<span leaf=""><br></span></section>\n')
+
+
+def q_footer(lines, P):
+    rows = ''.join(f'<p style="margin: {"0" if k == 0 else "4px 0 0"};">{_mark(l, "#595959", 13, False)}</p>'
+                   for k, l in enumerate(lines))
+    return (f'<section style="margin-top: 32px;padding: 12px 14px;border: 1px solid {P["light"]};border-radius: 8px;'
+            f'line-height: 22px;">{rows}</section>\n')
+
+
+def q_list(items, ordered, P):
+    """介绍文的列表像一张参数表：一条一行，下面带分隔线；有说明的放在条目下面。"""
+    strong = Q_BODY['strong'].format(**P)
+    rows = []
+    for n, (title, desc) in enumerate(items, 1):
+        mark = _mark(f'{n:02d}', P['primary'], 13) if ordered else _mark('◆', P['primary'], 10)
+        rows.append(f'<section style="padding: 8px 2px;border-bottom: 1px solid #eeeeee;">'
+                    f'<p style="margin: 0;line-height: 1.7em;padding-left: 1.8em;text-indent: -1.8em;">'
+                    f'<span style="display: inline-block;width: 1.8em;text-indent: 0;">{mark}</span>'
+                    f'<span style="{_font(Q_BODY)}">{inline(title, strong)}</span></p>'
+                    + (f'<p style="margin: 2px 0 0;padding-left: 1.8em;line-height: 1.7em;">'
+                       f'<span style="{_font(Q_BODY, 14, "#7f7f7f")}">{inline(desc, strong)}</span></p>' if desc else '')
+                    + '</section>\n')
+    return (f'<section style="margin: 4px 0 {Q_BODY["gap"]};border-top: 1px solid #eeeeee;">\n'
+            + ''.join(rows) + '</section>\n')
+
+
+LAYOUTS.update({
+    'explain':  dict(cn='图解说明', section=p_section, quote=p_quote, pq=p_pq, divider=p_divider, footer=p_footer,
+                     para=make_para(P_BODY),
+                     list=make_list(P_BODY, lambda P: _mark('▪', P['primary']), _square_num)),
+    'profile':  dict(cn='名片介绍', section=q_section, quote=q_quote, pq=q_pq, divider=q_divider, footer=q_footer,
+                     para=make_para(Q_BODY), list=q_list),
 })
 
 

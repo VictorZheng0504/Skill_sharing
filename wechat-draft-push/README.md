@@ -29,7 +29,7 @@
 
 - `SKILL.md`：给 AI 看的操作说明
 - `scripts/wechat.py`：主脚本（setup / ip / preview / push / templates）
-- `scripts/templates/`：14 套排版模板 b～o，排版逻辑都在 `_engine.py`
+- `scripts/templates/`：16 套排版模板 b～q，排版逻辑都在 `_engine.py`
 - `references/模板语法.md`：文章怎么写才能排出这些样式（所有模板通用）
 - `references/模板一览.md`：每套模板长什么样、适合什么文章、怎么换颜色
 - `references/自制模板.md`：照着喜欢的公众号，让 AI 做一套自己的模板

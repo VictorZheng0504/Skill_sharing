@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _engine import TemplateError, build, variant  # noqa: E402,F401
 
 NAME = "卡片种草型"
-LAYOUT, PALETTE = "cards", "red"
+LAYOUT, PALETTE = "cards", "pink"
 render = build(LAYOUT, PALETTE)
 
 
