@@ -4,8 +4,11 @@
     python3 wechat.py setup                       # 第一次用：生成配置文件，自己填 AppID / AppSecret
     python3 wechat.py ip                          # 查微信看到的本机 IP，告诉你去哪里加白名单
     python3 wechat.py preview 文章.md             # 排版并在浏览器里预览
+    python3 wechat.py preview 文章.md --all       # 所有模板排一遍，放一页里对比
     python3 wechat.py push 文章.md [--dry-run]    # 排版并推进草稿箱（再推会更新同一篇草稿）
-    python3 wechat.py templates                   # 列出可用模板
+    python3 wechat.py templates                   # 列出可用模板和配色
+
+模板可以和配色组合：--template e+blue 表示用 e 的版式、换成蓝色（配色也能写中文：e+蓝）。
 """
 from __future__ import annotations
 
@@ -54,7 +57,7 @@ WECHAT_APPSECRET=
 AUTHOR=
 # 文末信息卡，用 / 分行，例如：文字 · 张三 / 出品 · 某某公众号
 FOOTER=
-# 默认模板，填 templates 目录里的文件名（不带 .py）
+# 默认模板，填 templates 目录里的文件名（不带 .py）；想换颜色写成 模板+配色，例如 e+blue
 TEMPLATE=b
 """
 
@@ -256,7 +259,7 @@ def parse_article(md_path: Path) -> tuple[dict, str]:
     if m and all(":" in l or "：" in l or not l.strip() for l in m.group(1).splitlines()):
         for line in m.group(1).splitlines():
             if line.strip() and not line.lstrip().startswith("#"):
-                k, v = re.split(r"[:：]", line, 1)
+                k, v = re.split(r"[:：]", line, maxsplit=1)
                 meta[k.strip()] = v.strip().strip('"').strip("'")
         text = text[m.end():]
     # 标准 markdown 图片 ![描述](路径) 统一转成模板语法 [图片：路径|描述]
@@ -269,15 +272,27 @@ def parse_article(md_path: Path) -> tuple[dict, str]:
     return meta, text.lstrip("\n")
 
 
+def template_names() -> list[str]:
+    return [p.stem for p in sorted(TEMPLATE_DIR.glob("*.py")) if not p.stem.startswith("_")]
+
+
 def load_template(name: str):
-    path = TEMPLATE_DIR / f"{name.lower()}.py"
-    if not path.exists():
-        names = ", ".join(p.stem for p in sorted(TEMPLATE_DIR.glob("*.py")) if not p.stem.startswith("_"))
-        sys.exit(f"[停止] 没有模板 {name}，可用的有：{names}")
+    """name 是模板文件名，或者「模板+配色」组合（如 e+blue、b+绿）。"""
+    base, _, color = name.strip().partition("+")
+    path = TEMPLATE_DIR / f"{base.strip().lower()}.py"
+    if not path.exists() or path.stem.startswith("_"):
+        sys.exit(f"[停止] 没有模板 {base}，可用的有：{', '.join(template_names())}")
     spec = importlib.util.spec_from_file_location(f"wechat_tpl_{path.stem}", path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    return mod
+    if not color.strip():
+        return mod
+    if not hasattr(mod, "recolor"):
+        sys.exit(f"[停止] 模板 {base} 是自制模板，不支持「+配色」组合，直接写 {base}")
+    try:
+        return mod.recolor(color)
+    except Exception as e:  # 配色名写错：TemplateError 里带着可用配色列表
+        sys.exit(f"[停止] {e}")
 
 
 def compile_html(meta: dict, body: str, env: dict, template: str) -> str:
@@ -304,10 +319,11 @@ def self_check(html: str) -> list[str]:
 
 
 def wrap_page(fragment: str, title: str) -> str:
-    # 预览页放在 .wechat/ 里，base 指回文章所在目录，md 里的相对图片路径才能显示
+    # 预览页放在 .wechat/ 里，base 指回文章所在目录，md 里的相对图片路径才能显示；
+    # 微信正文默认 box-sizing: border-box，预览里也加上，不然带 padding 的卡片会溢出
     return (f"<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\"><base href=\"../\">"
             f"<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{htmllib.escape(title)}</title>"
-            f"<style>body{{margin:0;background:#f2f3f5}}main{{max-width:390px;margin:16px auto;padding:20px 16px;"
+            f"<style>*{{box-sizing:border-box}}body{{margin:0;background:#f2f3f5}}main{{max-width:390px;margin:16px auto;padding:20px 16px;"
             f"background:#fff;border-radius:12px}}img{{max-width:100%;height:auto}}"
             f"h1{{font-size:20px;margin:0 0 16px;font-family:-apple-system,sans-serif}}</style></head>"
             f"<body><main><h1>{htmllib.escape(title)}</h1>{fragment}</main></body></html>")
@@ -319,10 +335,35 @@ def work_dir(md_path: Path) -> Path:
     return d
 
 
+def compare_page(fragments: list[tuple[str, str]], title: str) -> str:
+    """--all 用：每个模板一栏，横向排开，方便挑。"""
+    cols = "".join(f"<div class=\"col\"><div class=\"tag\">{htmllib.escape(label)}</div><main>{frag}</main></div>"
+                   for label, frag in fragments)
+    return (f"<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\"><base href=\"../\">"
+            f"<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{htmllib.escape(title)}</title>"
+            f"<style>*{{box-sizing:border-box}}body{{margin:0;background:#f2f3f5;font-family:-apple-system,sans-serif}}"
+            f".wrap{{display:flex;gap:16px;overflow-x:auto;padding:16px;align-items:flex-start}}"
+            f".col{{flex:0 0 360px}}.tag{{font-size:14px;font-weight:bold;margin:0 0 8px 4px;color:#333}}"
+            f"main{{padding:20px 16px;background:#fff;border-radius:12px}}img{{max-width:100%;height:auto}}</style>"
+            f"</head><body><div class=\"wrap\">{cols}</div></body></html>")
+
+
 def cmd_preview(args) -> None:
     md_path = args.article.resolve()
     meta, body = parse_article(md_path)
     env = read_env()
+    if args.all:
+        frags = []
+        for name in template_names():
+            tpl = load_template(name)
+            frags.append((f"{name} · {getattr(tpl, 'NAME', '')}", compile_html(meta, body, env, name)))
+        page = work_dir(md_path) / f"{md_path.stem}.compare.html"
+        page.write_text(compare_page(frags, meta.get("title", md_path.stem)), encoding="utf-8")
+        print(f"已用 {len(frags)} 个模板排版，左右滑动对比。挑好后用 --template 模板名 推送")
+        print(f"对比页：{page}")
+        if not args.no_open:
+            webbrowser.open(page.as_uri())
+        return
     template = args.template or meta.get("template") or env.get("TEMPLATE") or "b"
     html = compile_html(meta, body, env, template)
     page = work_dir(md_path) / f"{md_path.stem}.preview.html"
@@ -490,9 +531,14 @@ def cmd_push(args) -> None:
 
 
 def cmd_templates(args) -> None:
-    for p in sorted(TEMPLATE_DIR.glob("*.py")):
-        if not p.stem.startswith("_"):
-            print(f"{p.stem}：{getattr(load_template(p.stem), 'NAME', '')}")
+    palettes = {}
+    for name in template_names():
+        mod = load_template(name)
+        palettes = getattr(mod, "PALETTES", None) or getattr(sys.modules.get("_engine"), "PALETTES", palettes)
+        print(f"{name}：{getattr(mod, 'NAME', '')}" + ("" if hasattr(mod, "recolor") else "（自制，不能换配色）"))
+    if palettes:
+        print("\n配色：" + "、".join(f"{k}（{v['cn']}）" for k, v in palettes.items()))
+        print("组合写法：--template 模板+配色，例如 e+blue、c+紫")
 
 
 def main() -> None:
@@ -505,14 +551,15 @@ def main() -> None:
     for name, func, text in (("preview", cmd_preview, "排版并预览"), ("push", cmd_push, "排版并推进草稿箱")):
         s = sub.add_parser(name, help=text)
         s.add_argument("article", type=Path, help="文章 .md 文件")
-        s.add_argument("--template", help="模板名，默认 b")
+        s.add_argument("--template", help="模板名，默认 b；可写 模板+配色，如 e+blue")
         if name == "preview":
             s.add_argument("--no-open", action="store_true", help="不自动打开浏览器")
+            s.add_argument("--all", action="store_true", help="所有模板各排一遍，放在一页里对比")
         else:
             s.add_argument("--dry-run", action="store_true", help="只检查和排版，不调微信接口")
             s.add_argument("--new", action="store_true", help="另建一篇新草稿，不更新上次那篇")
         s.set_defaults(func=func)
-    sub.add_parser("templates", help="列出可用模板").set_defaults(func=cmd_templates)
+    sub.add_parser("templates", help="列出可用模板和配色").set_defaults(func=cmd_templates)
     args = ap.parse_args()
     try:
         args.func(args)
