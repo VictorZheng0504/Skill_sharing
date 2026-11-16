@@ -67,5 +67,98 @@ class TemplateB(unittest.TestCase):
         self.assertIn("出品 · 某号", tpl.render("正文\n", ["文字 · 张三", "出品 · 某号"]))
 
 
+
+class AllTemplates(unittest.TestCase):
+    """新增的 c~j 模板和「模板+配色」组合。"""
+
+    def setUp(self):
+        self.meta, self.body = wechat.parse_article(ROOT / "examples" / "示例文章.md")
+
+    def test_every_template_renders_and_passes_self_check(self):
+        names = wechat.template_names()
+        self.assertGreaterEqual(len(names), 16)
+        for name in names:
+            with self.subTest(template=name):
+                html = wechat.compile_html(self.meta, self.body, {"FOOTER": "文字 · 张三 / 出品 · 某号"}, name)
+                self.assertEqual(wechat.self_check(html), [])
+                self.assertIn("它会变成什么样", html)  # 章节标题在
+                self.assertNotIn("一、", html)        # 中文序号被换成了各模板自己的编号
+                self.assertIn("出品 · 某号", html)
+                self.assertIn("请在此处上传", html)
+
+    def test_every_template_rejects_table(self):
+        for name in wechat.template_names():
+            tpl = wechat.load_template(name)
+            with self.subTest(template=name), self.assertRaises(tpl.TemplateError):
+                tpl.render("| a | b |\n", [])
+
+    def test_recolor_combo(self):
+        brown = wechat.compile_html(self.meta, self.body, {}, "e")
+        blue = wechat.compile_html(self.meta, self.body, {}, "e+blue")
+        self.assertIn("#8a5a3c", brown)
+        self.assertNotIn("#8a5a3c", blue)
+        self.assertIn("rgb(15, 75, 235)", blue)
+        self.assertEqual(blue, wechat.compile_html(self.meta, self.body, {}, "e+蓝"))  # 中文配色名也行
+        self.assertIn("蓝", wechat.load_template("e+blue").NAME)
+
+    def test_b_with_other_color_keeps_layout(self):
+        html = wechat.compile_html(self.meta, self.body, {}, "b+green")
+        self.assertIn(">01<", html)
+        self.assertIn("#108c5a", html)
+
+    def test_bad_palette_or_template_stops(self):
+        with self.assertRaises(SystemExit) as cm:
+            wechat.load_template("e+不存在")
+        self.assertIn("可用的有", str(cm.exception.code))
+        with self.assertRaises(SystemExit):
+            wechat.load_template("zz")
+        with self.assertRaises(SystemExit):
+            wechat.load_template("_engine")  # 引擎不是模板
+
+    def test_tags_balanced(self):
+        # k～o 有整页外框、每章卡片，开闭标签要配对，不然微信里后面的内容会被吞进卡片
+        for name in wechat.template_names():
+            for foot in ("", "文字 · 张三"):
+                html = wechat.compile_html(self.meta, self.body, {"FOOTER": foot}, name)
+                for tag in ("section", "p", "span", "strong"):
+                    with self.subTest(template=name, tag=tag, footer=bool(foot)):
+                        self.assertEqual(html.count(f"<{tag}"), html.count(f"</{tag}>"))
+
+    def test_new_five_differ_from_b(self):
+        for name in "klmno":
+            html = wechat.compile_html(self.meta, self.body, {}, name)
+            with self.subTest(template=name):
+                self.assertNotIn("#DCE5FC", html)   # 没有 b 的浅蓝方块编号
+                self.assertNotIn("<ol", html)       # 列表自己画序号
+                self.assertNotIn("#f7f7f7;border-radius: 6px;text-align: center", html)  # 没有 b 的灰底题记
+        self.assertIn("text-indent: 2em", wechat.compile_html(self.meta, self.body, {}, "m"))   # 首行缩进
+        self.assertIn("text-align: center", wechat.compile_html(self.meta, self.body, {}, "n"))  # 全文居中
+        o = wechat.compile_html(self.meta, self.body, {}, "o")
+        self.assertEqual(o.count("box-shadow"), 3)                                               # 三章三张卡片
+
+    def test_no_red(self):
+        # 红色配色已经去掉：既不是任何模板的默认色，也不能再 +red 组合
+        for name in wechat.template_names():
+            with self.subTest(template=name):
+                self.assertNotIn("#b8322a", wechat.compile_html(self.meta, self.body, {}, name))
+        for combo in ("e+red", "b+红"):
+            with self.assertRaises(SystemExit):
+                wechat.load_template(combo)
+
+    def test_explain_and_profile(self):
+        p = wechat.compile_html(self.meta, self.body, {}, "p")
+        self.assertIn("知识点 01", p)
+        self.assertIn("一句话看懂", p)
+        self.assertIn("划重点", p)
+        q = wechat.compile_html(self.meta, self.body, {}, "q")
+        self.assertIn("简　介", q)
+        self.assertIn("★ 亮点", q)
+        self.assertIn("01 /", q)
+
+    def test_compare_page(self):
+        page = wechat.compare_page([("b · 反思思辨型", "<p>x</p>"), ("c · 干货教程型", "<p>y</p>")], "t")
+        self.assertEqual(page.count('class="col"'), 2)
+
+
 if __name__ == "__main__":
     unittest.main()
