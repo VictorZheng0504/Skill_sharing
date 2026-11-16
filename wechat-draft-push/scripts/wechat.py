@@ -322,11 +322,11 @@ def self_check(html: str) -> list[str]:
 
 def wrap_page(fragment: str, title: str) -> str:
     # 预览页放在 .wechat/ 里，base 指回文章所在目录，md 里的相对图片路径才能显示；
-    # 微信正文默认 box-sizing: border-box，列表 list-paddingleft-1 自带左缩进；预览里也照样加上，
-    # 不然带 padding 的卡片会溢出、列表序号会跑到边外
+    # 微信正文默认 box-sizing: border-box、长单词自动断行，列表 list-paddingleft-1 自带左缩进；
+    # 预览里也照样加上，不然带 padding 的卡片会溢出、列表序号和长网址会跑到边外
     return (f"<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\"><base href=\"../\">"
             f"<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{htmllib.escape(title)}</title>"
-            f"<style>*{{box-sizing:border-box}}.list-paddingleft-1{{padding-left:1.2em}}body{{margin:0;background:#f2f3f5}}main{{max-width:390px;margin:16px auto;padding:20px 16px;"
+            f"<style>*{{box-sizing:border-box}}.list-paddingleft-1{{padding-left:1.2em}}main{{word-wrap:break-word}}body{{margin:0;background:#f2f3f5}}main{{max-width:390px;margin:16px auto;padding:20px 16px;"
             f"background:#fff;border-radius:12px}}img{{max-width:100%;height:auto}}"
             f"h1{{font-size:20px;margin:0 0 16px;font-family:-apple-system,sans-serif}}</style></head>"
             f"<body><main><h1>{htmllib.escape(title)}</h1>{fragment}</main></body></html>")
@@ -344,7 +344,7 @@ def compare_page(fragments: list[tuple[str, str]], title: str) -> str:
                    for label, frag in fragments)
     return (f"<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\"><base href=\"../\">"
             f"<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{htmllib.escape(title)}</title>"
-            f"<style>*{{box-sizing:border-box}}.list-paddingleft-1{{padding-left:1.2em}}body{{margin:0;background:#f2f3f5;font-family:-apple-system,sans-serif}}"
+            f"<style>*{{box-sizing:border-box}}.list-paddingleft-1{{padding-left:1.2em}}main{{word-wrap:break-word}}body{{margin:0;background:#f2f3f5;font-family:-apple-system,sans-serif}}"
             f".wrap{{display:flex;gap:16px;overflow-x:auto;padding:16px;align-items:flex-start}}"
             f".col{{flex:0 0 360px}}.tag{{font-size:14px;font-weight:bold;margin:0 0 8px 4px;color:#333}}"
             f"main{{padding:20px 16px;background:#fff;border-radius:12px}}img{{max-width:100%;height:auto}}</style>"
