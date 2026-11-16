@@ -76,7 +76,7 @@ class AllTemplates(unittest.TestCase):
 
     def test_every_template_renders_and_passes_self_check(self):
         names = wechat.template_names()
-        self.assertGreaterEqual(len(names), 9)
+        self.assertGreaterEqual(len(names), 14)
         for name in names:
             with self.subTest(template=name):
                 html = wechat.compile_html(self.meta, self.body, {"FOOTER": "文字 · 张三 / 出品 · 某号"}, name)
@@ -114,6 +114,27 @@ class AllTemplates(unittest.TestCase):
             wechat.load_template("zz")
         with self.assertRaises(SystemExit):
             wechat.load_template("_engine")  # 引擎不是模板
+
+    def test_tags_balanced(self):
+        # k～o 有整页外框、每章卡片，开闭标签要配对，不然微信里后面的内容会被吞进卡片
+        for name in wechat.template_names():
+            for foot in ("", "文字 · 张三"):
+                html = wechat.compile_html(self.meta, self.body, {"FOOTER": foot}, name)
+                for tag in ("section", "p", "span", "strong"):
+                    with self.subTest(template=name, tag=tag, footer=bool(foot)):
+                        self.assertEqual(html.count(f"<{tag}"), html.count(f"</{tag}>"))
+
+    def test_new_five_differ_from_b(self):
+        for name in "klmno":
+            html = wechat.compile_html(self.meta, self.body, {}, name)
+            with self.subTest(template=name):
+                self.assertNotIn("#DCE5FC", html)   # 没有 b 的浅蓝方块编号
+                self.assertNotIn("<ol", html)       # 列表自己画序号
+                self.assertNotIn("#f7f7f7;border-radius: 6px;text-align: center", html)  # 没有 b 的灰底题记
+        self.assertIn("text-indent: 2em", wechat.compile_html(self.meta, self.body, {}, "m"))   # 首行缩进
+        self.assertIn("text-align: center", wechat.compile_html(self.meta, self.body, {}, "n"))  # 全文居中
+        o = wechat.compile_html(self.meta, self.body, {}, "o")
+        self.assertEqual(o.count("box-shadow"), 3)                                               # 三章三张卡片
 
     def test_compare_page(self):
         page = wechat.compare_page([("b · 反思思辨型", "<p>x</p>"), ("c · 干货教程型", "<p>y</p>")], "t")

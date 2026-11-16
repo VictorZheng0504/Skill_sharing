@@ -48,6 +48,8 @@ PALETTES: Dict[str, dict] = {
                    line='#a06e4c', soft='#faf6f2'),
     'pink':   dict(cn='粉', primary='#c43d6e', light='#fbe3ec', highlight='#f9d0de',
                    line='#e0628e', soft='#fff6f9'),
+    'yellow': dict(cn='黄', primary='#9a6b00', light='#fff1c2', highlight='#ffe58a',
+                   line='#e0a800', soft='#fffbf0'),
     'ink':    dict(cn='黑', primary='#222222', light='#eeeeee', highlight='#e3e3e3',
                    line='#555555', soft='#f7f7f7'),
 }
@@ -96,14 +98,15 @@ def _esc(text: str) -> str:
     return text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 
 
-def inline(text: str) -> str:
-    """段内 **加粗** 和 `行内代码`。"""
+def inline(text: str, strong: str = '') -> str:
+    """段内 **加粗** 和 `行内代码`。strong 给加粗另配样式（比如换成主色），不给就是普通加粗。"""
     out = []
+    open_tag = f'<strong style="{strong}">' if strong else '<strong>'
     for part in re.split(r'(\*\*[^*]+?\*\*|`[^`]+?`)', text):
         if not part:
             continue
         if part.startswith('**') and part.endswith('**'):
-            out.append(f'<strong><span leaf="">{part[2:-2]}</span></strong>')
+            out.append(f'{open_tag}<span leaf="">{part[2:-2]}</span></strong>')
         elif part.startswith('`') and part.endswith('`') and len(part) > 2:
             out.append(f'<span style="background: #f2f2f2;padding: 2px 6px;border-radius: 3px;'
                        f'font-size: 14px;color: #333333;word-break: break-all;{CODE_FONT}">'
@@ -387,6 +390,311 @@ LAYOUTS: Dict[str, dict] = {
 }
 
 
+# ================================================================ 和 b 完全不同的五套（k～o）
+# 这五套连正文都重新设计：字色、字间距、行距、对齐、首行缩进、列表符号各不相同。
+# 数值参考公众号排版的常见建议：正文深灰 #3f3f3f / #595959 不用纯黑，字间距 1px 左右，
+# 行距 1.75～2，长文两端对齐，注释 13px；居中对齐只适合短句多的活动、产品介绍类文章。
+
+SERIF = ('font-family: Georgia, &quot;Songti SC&quot;, &quot;STSong&quot;, &quot;SimSun&quot;, '
+         '&quot;Noto Serif CJK SC&quot;, serif;')
+
+
+def body_style(color='#3f3f3f', ls='1px', lh='1.75em', align='justify', indent=False, gap='16px',
+               ff=FF, strong=''):
+    """一套正文规则。strong 是加粗的样式，可以写 {primary} {highlight} 之类的配色占位。"""
+    return dict(color=color, ls=ls, lh=lh, align=align, indent=indent, gap=gap, ff=ff, strong=strong)
+
+
+def _font(B, size=15, color=None):
+    return f'font-size: {size}px;color: {color or B["color"]};letter-spacing: {B["ls"]};{B["ff"]}'
+
+
+def make_para(B):
+    def para(text, P):
+        s = text.strip()
+        style = (f'margin: 0 0 {B["gap"]};line-height: {B["lh"]};text-align: {B["align"]};'
+                 + ('text-indent: 2em;' if B['indent'] else ''))
+        if s.startswith('**') and s.endswith('**') and '**' not in s[2:-2]:
+            return f'<p style="{style}"><strong><span leaf="" style="{_font(B)}">{s[2:-2]}</span></strong></p>\n'
+        return f'<p style="{style}"><span style="{_font(B)}">{inline(s, B["strong"].format(**P))}</span></p>\n'
+    return para
+
+
+def make_list(B, ul_mark, ol_mark, center=False):
+    """列表不用 <ol>/<ul>（微信里圆点样式改不了），每条一段，自己画序号；第二行起和文字对齐。"""
+    def lst(items, ordered, P):
+        rows = []
+        strong = B['strong'].format(**P)
+        for n, (title, desc) in enumerate(items, 1):
+            mark = ol_mark(n, P) if ordered else ul_mark(P)
+            if center:
+                rows.append(f'<p style="margin: 0 0 6px;line-height: {B["lh"]};text-align: center;">{mark}'
+                            f'<span style="{_font(B)}">{inline(title, strong)}</span></p>\n')
+                pad = 'text-align: center;'
+            else:
+                mark = (f'<span style="display: inline-block;width: 1.8em;text-indent: 0;">{mark}</span>')
+                rows.append(f'<p style="margin: 0 0 6px;line-height: {B["lh"]};padding-left: 1.8em;'
+                            f'text-indent: -1.8em;">{mark}<span style="{_font(B)}">{inline(title, strong)}</span></p>\n')
+                pad = 'padding-left: 1.8em;'
+            if desc:
+                rows.append(f'<p style="margin: -2px 0 10px;line-height: 1.75em;{pad}">'
+                            f'<span style="{_font(B, 14, "#7f7f7f")}">{inline(desc, strong)}</span></p>\n')
+        return f'<section style="margin: 4px 0 {B["gap"]};">\n' + ''.join(rows) + '</section>\n'
+    return lst
+
+
+def _mark(text, color, size=14, bold=True, extra=''):
+    return (f'<span leaf="" style="font-size: {size}px;color: {color};{"font-weight: bold;" if bold else ""}'
+            f'{extra}">{text}</span>')
+
+
+def pq_rows(paras, text_style, mark_color, lh='1.8em'):
+    """自定义金句的正文：普通写法整句加粗；「原话」写法前后加主色角括号。"""
+    paras = [p.replace('**', '') for p in paras]
+    bracket = paras[0].startswith('「') and paras[-1].endswith('」')
+    rows = []
+    for k, para in enumerate(paras):
+        body = para
+        if bracket:
+            body = body[1:] if k == 0 else body
+            body = body[:-1] if k == len(paras) - 1 else body
+        left = _mark('「', mark_color, 16) if bracket and k == 0 else ''
+        right = _mark('」', mark_color, 16) if bracket and k == len(paras) - 1 else ''
+        rows.append(f'<p style="margin: {"0" if k == 0 else "8px 0 0"};line-height: {lh};"><strong>{left}'
+                    f'<span style="{text_style}">{inline(body)}</span>{right}</strong></p>\n')
+    return ''.join(rows)
+
+
+# ---------------------------------------------------------------- k 时尚杂志：粗黑线 + CHAPTER，留白大，字距宽
+
+K_BODY = body_style(color='#3f3f3f', ls='1.2px', lh='2em', gap='20px', strong='color: #111111;')
+
+
+def k_section(t, i, P):
+    return (f'<section style="margin: 40px 0 20px;padding-top: 10px;border-top: 2px solid #111111;">'
+            f'<p style="margin: 0;line-height: 1.6em;">{_mark(f"CHAPTER {i:02d}", P["primary"], 12, True, "letter-spacing: 3px;")}</p>'
+            f'<p style="margin: 6px 0 0;line-height: 1.6em;">'
+            f'<span leaf="" style="font-size: 16px;font-weight: bold;color: #111111;letter-spacing: 2px;">{t}</span></p>'
+            f'</section>\n')
+
+
+def k_quote(text, P):
+    return (f'<section style="margin: 8px 0 28px;">'
+            f'<p style="margin: 0;line-height: 1.9em;"><span leaf="" style="font-size: 14px;color: #7f7f7f;'
+            f'letter-spacing: 1.5px;font-style: italic;{SERIF}">{text}</span></p>'
+            f'<section style="margin-top: 10px;width: 28px;border-top: 2px solid {P["primary"]};">'
+            f'<span leaf=""><br></span></section></section>\n')
+
+
+def k_pq(paras, P):
+    return (f'<section style="margin: 32px 6px;padding: 18px 6px;border-top: 1px solid #111111;'
+            f'border-bottom: 1px solid #111111;text-align: center;">\n'
+            + pq_rows(paras, f'font-size: 16px;color: #111111;letter-spacing: 1.5px;{SERIF}', P['primary'], '1.9em')
+            + '</section>\n')
+
+
+def k_divider(P):
+    return _div_text('§', '#a5a5a5', 14, 0)
+
+
+def k_footer(lines, P):
+    rows = ''.join(f'<p style="margin: 4px 0 0;">{_mark(l, "#7f7f7f", 13, False, "letter-spacing: 1px;")}</p>'
+                   for l in lines)
+    return (f'<section style="margin-top: 44px;text-align: center;line-height: 22px;">'
+            f'<p style="margin: 0 0 10px;">{_mark("— END —", "#111111", 12, True, "letter-spacing: 4px;")}</p>'
+            f'{rows}</section>\n')
+
+
+# ---------------------------------------------------------------- l 文艺手账：米色纸面、马克笔标题、便签金句
+
+L_BODY = body_style(color='#4a4a4a', ls='1px', lh='1.9em', align='left', gap='16px',
+                    strong='background: linear-gradient(transparent 60%, {highlight} 60%);')
+
+
+def l_page(P):
+    return f'<section style="padding: 20px 16px 24px;background: {P["soft"]};border-radius: 12px;">\n'
+
+
+def l_section(t, i, P):
+    return (f'<section style="margin: 30px 0 14px;line-height: 1.6em;">'
+            f'{_mark(f"No.{i}", P["primary"], 13, True, "margin-right: 8px;letter-spacing: 1px;")}'
+            f'<span style="display: inline-block;padding: 0 6px;background: linear-gradient(transparent 45%, '
+            f'{P["highlight"]} 45%, {P["highlight"]} 92%, transparent 92%);">'
+            f'<span leaf="" style="font-size: 16px;font-weight: bold;color: #333333;letter-spacing: 1px;">{t}</span>'
+            f'</span></section>\n')
+
+
+def l_quote(text, P):
+    return (f'<section style="margin: 6px 0 22px;padding: 12px 14px;background: #ffffff;'
+            f'border: 1px dashed {P["line"]};border-radius: 8px;">'
+            f'<p style="margin: 0;line-height: 1.85em;">{_mark("✎ ", P["primary"], 14, False)}'
+            f'<span leaf="" style="font-size: 14px;color: #7f7f7f;letter-spacing: 1px;">{text}</span></p></section>\n')
+
+
+def l_pq(paras, P):
+    return (f'<section style="margin: 24px 12px;padding: 14px 16px;background: {P["light"]};border-radius: 3px;'
+            f'box-shadow: 3px 3px 0 {P["highlight"]};">\n'
+            + pq_rows(paras, f'font-size: 15px;color: #333333;letter-spacing: 1px;{FF}', P['primary'])
+            + '</section>\n')
+
+
+def l_divider(P):
+    return _div_text('～ ～ ～', P['line'], 14, 2)
+
+
+def l_footer(lines, P):
+    rows = ''.join(f'<p style="margin: 4px 0 0;">{_mark(l, "#7f7f7f", 13, False, "letter-spacing: 1px;")}</p>'
+                   for l in lines)
+    return (f'<section style="margin-top: 32px;padding-top: 14px;border-top: 1px dashed {P["line"]};'
+            f'text-align: center;line-height: 22px;">{rows}</section>\n')
+
+
+# ---------------------------------------------------------------- m 严谨报告：衬线字、首行缩进、两端对齐、提要 / 要点框
+
+M_BODY = body_style(color='#333333', ls='0.5px', lh='1.85em', indent=True, gap='12px', ff=SERIF,
+                    strong='color: {primary};')
+
+
+def m_section(t, i, P):
+    return (f'<section style="margin: 30px 0 14px;padding-bottom: 6px;border-bottom: 1px solid #dddddd;'
+            f'line-height: 1.6em;"><span leaf="" style="font-size: 16px;font-weight: bold;color: {P["primary"]};'
+            f'{SERIF}">{i}　{t}</span></section>\n')
+
+
+def m_quote(text, P):
+    return (f'<section style="margin: 6px 0 24px;padding: 12px 14px;border: 1px solid #dddddd;background: #fafafa;">'
+            f'<p style="margin: 0 0 4px;">{_mark("提　要", P["primary"], 13, True, "letter-spacing: 2px;")}</p>'
+            f'<p style="margin: 0;line-height: 1.8em;text-align: justify;"><span leaf="" style="font-size: 14px;'
+            f'color: #595959;{SERIF}">{text}</span></p></section>\n')
+
+
+def m_pq(paras, P):
+    return (f'<section style="margin: 20px 0;border: 1px solid {P["line"]};">'
+            f'<p style="margin: 0;padding: 3px 12px;background: {P["primary"]};">'
+            f'{_mark("要　点", "#ffffff", 12, True, "letter-spacing: 2px;")}</p>'
+            f'<section style="padding: 10px 14px;">\n'
+            + pq_rows(paras, f'font-size: 15px;color: #222222;{SERIF}', P['primary'])
+            + '</section></section>\n')
+
+
+def m_divider(P):
+    return '<section style="margin: 20px 0;border-top: 1px solid #dddddd;"><span leaf=""><br></span></section>\n'
+
+
+def m_footer(lines, P):
+    rows = ''.join(f'<p style="margin: 4px 0 0;">{_mark(l, "#595959", 13, False, SERIF)}</p>' for l in lines)
+    return (f'<section style="margin-top: 36px;padding-top: 10px;border-top: 3px double #a5a5a5;'
+            f'line-height: 22px;">{rows}</section>\n')
+
+
+# ---------------------------------------------------------------- n 居中活动：全文居中、胶囊标题、短句节奏
+
+N_BODY = body_style(color='#3f3f3f', ls='1px', lh='2em', align='center', gap='18px', strong='color: {primary};')
+
+
+def n_section(t, i, P):
+    return (f'<section style="margin: 36px 0 18px;text-align: center;line-height: 1.6em;">'
+            f'<p style="margin: 0 0 6px;">{_mark(f"· {i:02d} ·", P["primary"], 12, True, "letter-spacing: 3px;")}</p>'
+            f'<span style="display: inline-block;padding: 6px 22px;background: {P["primary"]};border-radius: 20px;">'
+            f'<span leaf="" style="font-size: 16px;font-weight: bold;color: #ffffff;letter-spacing: 2px;">{t}</span>'
+            f'</span></section>\n')
+
+
+def n_quote(text, P):
+    return (f'<section style="margin: 8px 0 26px;text-align: center;">'
+            f'<p style="margin: 0;line-height: 1.9em;"><span leaf="" style="font-size: 14px;color: #7f7f7f;'
+            f'letter-spacing: 1.5px;">{text}</span></p>'
+            f'<p style="margin: 8px 0 0;">{_mark("▼", P["line"], 10, False)}</p></section>\n')
+
+
+def n_pq(paras, P):
+    return (f'<section style="margin: 24px 0;padding: 16px 12px;background: {P["light"]};border-radius: 14px;'
+            f'text-align: center;">\n'
+            + pq_rows(paras, f'font-size: 16px;color: #222222;letter-spacing: 1px;{FF}', P['primary'])
+            + '</section>\n')
+
+
+def n_divider(P):
+    return _div_text('✦', P['primary'], 12, 0)
+
+
+def n_footer(lines, P):
+    rows = ''.join(f'<p style="margin: 4px 0 0;">{_mark(l, "#595959", 13, False, "letter-spacing: 1px;")}</p>'
+                   for l in lines)
+    return (f'<section style="margin-top: 36px;padding: 14px 12px;border: 1px dashed {P["line"]};border-radius: 14px;'
+            f'text-align: center;line-height: 22px;">{rows}</section>\n')
+
+
+# ---------------------------------------------------------------- o 卡片种草：灰底页面，每章一张白卡片，话题式标题
+
+O_BODY = body_style(color='#333333', ls='0.5px', lh='1.8em', align='left', gap='12px', strong='color: {primary};')
+
+
+def o_page(P):
+    return '<section style="padding: 12px 10px;background: #f4f4f6;border-radius: 14px;">\n'
+
+
+def o_chapter(P):
+    return ('<section style="margin: 12px 0;padding: 16px 14px 6px;background: #ffffff;border-radius: 12px;'
+            'box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);">\n')
+
+
+def o_section(t, i, P):
+    return (f'<p style="margin: 0 0 12px;line-height: 1.6em;">{_mark(f"#{i} ", P["primary"], 16)}'
+            f'<span leaf="" style="font-size: 16px;font-weight: bold;color: #222222;">{t}</span></p>\n')
+
+
+def o_quote(text, P):
+    return (f'<section style="margin: 6px 0 14px;padding: 4px 10px;text-align: center;">'
+            f'<p style="margin: 0;line-height: 1.85em;"><span leaf="" style="font-size: 14px;color: #7f7f7f;">'
+            f'{text}</span></p></section>\n')
+
+
+def o_pq(paras, P):
+    return (f'<section style="margin: 14px 0;padding: 12px 14px;background: {P["primary"]};border-radius: 10px;">\n'
+            + pq_rows(paras, f'font-size: 15px;color: #ffffff;{FF}', P['light'])
+            + '</section>\n')
+
+
+def o_divider(P):
+    return '<section style="margin: 14px 0;border-top: 1px dashed #e5e5e5;"><span leaf=""><br></span></section>\n'
+
+
+def o_footer(lines, P):
+    rows = ''.join(f'<p style="margin: 2px 0 0;">{_mark(l, "#7f7f7f", 13, False)}</p>' for l in lines)
+    return (f'<section style="margin-top: 12px;padding: 12px 14px;background: #ffffff;border-radius: 12px;'
+            f'text-align: center;line-height: 22px;">{rows}</section>\n')
+
+
+def _circle_num(n, P):
+    return (f'<span style="display: inline-block;width: 18px;height: 18px;line-height: 18px;border-radius: 50%;'
+            f'background: {P["light"]};text-align: center;">{_mark(n, P["primary"], 12)}</span>')
+
+
+LAYOUTS.update({
+    'magazine': dict(cn='时尚杂志', section=k_section, quote=k_quote, pq=k_pq, divider=k_divider, footer=k_footer,
+                     para=make_para(K_BODY),
+                     list=make_list(K_BODY, lambda P: _mark('—', P['primary']),
+                                    lambda n, P: _mark(f'{n:02d}', P['primary'], 13))),
+    'journal':  dict(cn='文艺手账', section=l_section, quote=l_quote, pq=l_pq, divider=l_divider, footer=l_footer,
+                     para=make_para(L_BODY), page=(l_page, '</section>\n'),
+                     list=make_list(L_BODY, lambda P: _mark('✓', P['primary']),
+                                    lambda n, P: _mark(chr(0x2460 + n - 1) if n <= 20 else f'{n}.', P['primary'], 15))),
+    'report':   dict(cn='严谨报告', section=m_section, quote=m_quote, pq=m_pq, divider=m_divider, footer=m_footer,
+                     para=make_para(M_BODY),
+                     list=make_list(M_BODY, lambda P: _mark('○', P['primary'], 12, False),
+                                    lambda n, P: _mark(f'({n})', P['primary'], 14, False, SERIF))),
+    'event':    dict(cn='居中活动', section=n_section, quote=n_quote, pq=n_pq, divider=n_divider, footer=n_footer,
+                     para=make_para(N_BODY),
+                     list=make_list(N_BODY, lambda P: _mark('✓ ', P['primary']),
+                                    lambda n, P: _mark(f'{n}. ', P['primary']), center=True)),
+    'cards':    dict(cn='卡片种草', section=o_section, quote=o_quote, pq=o_pq, divider=o_divider, footer=o_footer,
+                     para=make_para(O_BODY), page=(o_page, '</section>\n'), chapter=(o_chapter, '</section>\n'),
+                     list=make_list(O_BODY, lambda P: _mark('●', P['primary'], 10),
+                                    lambda n, P: _circle_num(n, P))),
+})
+
+
 # ---------------------------------------------------------------- 解析
 
 def _collect_list(lines, start, ordered):
@@ -439,6 +747,11 @@ def render_with(md: str, footer_lines: List[str], layout: str, palette_name: str
     lint(md)
     lines = md.splitlines()
     out, i, sec, img_idx = [], 0, 0, 0
+    para_fn = L.get('para') or (lambda text, P: paragraph(text))
+    list_fn = L.get('list') or (lambda items, ordered, P: listing(items, ordered))
+    chapter = L.get('chapter')  # (开头函数, 结尾 HTML)：把每一章整个包起来，做卡片、时间线这类效果
+    if L.get('page'):           # (开头函数, 结尾 HTML)：整篇文章外面再包一层，做底色、页边留白
+        out.append(L['page'][0](P))
     while i < len(lines):
         line = lines[i].rstrip()
         if not line.strip():
@@ -448,11 +761,14 @@ def render_with(md: str, footer_lines: List[str], layout: str, palette_name: str
             out.append(h1(H1_RE.match(line).group(1)))
         elif H2_RE.match(line):
             sec += 1
+            if chapter:
+                out.append((chapter[1] if sec > 1 else '') + chapter[0](P))
             out.append(L['section'](clean_title(H2_RE.match(line).group(1)), sec, P))
         elif PQ_RE.match(line):
             paras, i = _collect_pullquote(lines, i)
             if paras:
-                out.append(pullquote(paras, P, *L['pq']))
+                pq = L['pq']
+                out.append(pq(paras, P) if callable(pq) else pullquote(paras, P, *pq))
             continue
         elif BQ_RE.match(line):
             quote = []
@@ -472,7 +788,7 @@ def render_with(md: str, footer_lines: List[str], layout: str, palette_name: str
         elif OL_RE.match(line) or UL_RE.match(line):
             ordered = bool(OL_RE.match(line))
             items, i = _collect_list(lines, i, ordered)
-            out.append(listing(items, ordered))
+            out.append(list_fn(items, ordered, P))
             continue
         else:
             para = [line]
@@ -480,11 +796,15 @@ def render_with(md: str, footer_lines: List[str], layout: str, palette_name: str
             while i < len(lines) and lines[i].strip() and not _starts_block(lines[i].rstrip()):
                 para.append(lines[i].rstrip())
                 i += 1
-            out.append(paragraph(' '.join(s.strip() for s in para)))
+            out.append(para_fn(' '.join(s.strip() for s in para), P))
             continue
         i += 1
+    if chapter and sec:
+        out.append(chapter[1])
     if footer_lines:  # 文末信息卡：没配就不出
         out.append(L['footer'](footer_lines, P))
+    if L.get('page'):
+        out.append(L['page'][1])
     return ''.join(out)
 
 
