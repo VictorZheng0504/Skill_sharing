@@ -58,7 +58,7 @@ AUTHOR=
 # 文末信息卡，用 / 分行，例如：文字 · 张三 / 出品 · 某某公众号
 FOOTER=
 # 默认模板，填 templates 目录里的文件名（不带 .py）；想换颜色写成 模板+配色，例如 e+blue
-TEMPLATE=b
+TEMPLATE=c
 """
 
 WHITELIST_GUIDE = f"""\
@@ -85,6 +85,8 @@ NOT_WHITELISTED = (40164, 61004)
 IPV4_RE = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
 # 国内能直连、只返回 IP 的服务；只作参考，最准的是微信接口报错里带的 IP
 IP_SERVICES = ("https://4.ipw.cn", "https://myip.ipip.net", "https://ipv4.icanhazip.com")
+
+DEFAULT_TEMPLATE = "c"  # 配置文件和文章里都没指定模板时用它
 
 LIMITS = {"title": 32, "author": 16, "digest": 120}
 CONTENT_LIMIT = 1_000_000  # 草稿正文上限 1MB（实测超出报 45002）
@@ -320,10 +322,11 @@ def self_check(html: str) -> list[str]:
 
 def wrap_page(fragment: str, title: str) -> str:
     # 预览页放在 .wechat/ 里，base 指回文章所在目录，md 里的相对图片路径才能显示；
-    # 微信正文默认 box-sizing: border-box，预览里也加上，不然带 padding 的卡片会溢出
+    # 微信正文默认 box-sizing: border-box，列表 list-paddingleft-1 自带左缩进；预览里也照样加上，
+    # 不然带 padding 的卡片会溢出、列表序号会跑到边外
     return (f"<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\"><base href=\"../\">"
             f"<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{htmllib.escape(title)}</title>"
-            f"<style>*{{box-sizing:border-box}}body{{margin:0;background:#f2f3f5}}main{{max-width:390px;margin:16px auto;padding:20px 16px;"
+            f"<style>*{{box-sizing:border-box}}.list-paddingleft-1{{padding-left:1.2em}}body{{margin:0;background:#f2f3f5}}main{{max-width:390px;margin:16px auto;padding:20px 16px;"
             f"background:#fff;border-radius:12px}}img{{max-width:100%;height:auto}}"
             f"h1{{font-size:20px;margin:0 0 16px;font-family:-apple-system,sans-serif}}</style></head>"
             f"<body><main><h1>{htmllib.escape(title)}</h1>{fragment}</main></body></html>")
@@ -341,7 +344,7 @@ def compare_page(fragments: list[tuple[str, str]], title: str) -> str:
                    for label, frag in fragments)
     return (f"<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\"><base href=\"../\">"
             f"<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{htmllib.escape(title)}</title>"
-            f"<style>*{{box-sizing:border-box}}body{{margin:0;background:#f2f3f5;font-family:-apple-system,sans-serif}}"
+            f"<style>*{{box-sizing:border-box}}.list-paddingleft-1{{padding-left:1.2em}}body{{margin:0;background:#f2f3f5;font-family:-apple-system,sans-serif}}"
             f".wrap{{display:flex;gap:16px;overflow-x:auto;padding:16px;align-items:flex-start}}"
             f".col{{flex:0 0 360px}}.tag{{font-size:14px;font-weight:bold;margin:0 0 8px 4px;color:#333}}"
             f"main{{padding:20px 16px;background:#fff;border-radius:12px}}img{{max-width:100%;height:auto}}</style>"
@@ -364,7 +367,7 @@ def cmd_preview(args) -> None:
         if not args.no_open:
             webbrowser.open(page.as_uri())
         return
-    template = args.template or meta.get("template") or env.get("TEMPLATE") or "b"
+    template = args.template or meta.get("template") or env.get("TEMPLATE") or DEFAULT_TEMPLATE
     html = compile_html(meta, body, env, template)
     page = work_dir(md_path) / f"{md_path.stem}.preview.html"
     page.write_text(wrap_page(html, meta.get("title", md_path.stem)), encoding="utf-8")
@@ -428,7 +431,7 @@ def cmd_push(args) -> None:
     base = md_path.parent
     meta, body = parse_article(md_path)
     env = read_env() if args.dry_run else require_env()
-    template = args.template or meta.get("template") or env.get("TEMPLATE") or "b"
+    template = args.template or meta.get("template") or env.get("TEMPLATE") or DEFAULT_TEMPLATE
     meta.setdefault("author", env.get("AUTHOR", ""))
 
     problems = [] if meta.get("title") else ["没有标题：在文章开头的信息区写 title，或者第一行写 # 标题"]
@@ -551,7 +554,7 @@ def main() -> None:
     for name, func, text in (("preview", cmd_preview, "排版并预览"), ("push", cmd_push, "排版并推进草稿箱")):
         s = sub.add_parser(name, help=text)
         s.add_argument("article", type=Path, help="文章 .md 文件")
-        s.add_argument("--template", help="模板名，默认 b；可写 模板+配色，如 e+blue")
+        s.add_argument("--template", help="模板名，默认 c；可写 模板+配色，如 e+blue")
         if name == "preview":
             s.add_argument("--no-open", action="store_true", help="不自动打开浏览器")
             s.add_argument("--all", action="store_true", help="所有模板各排一遍，放在一页里对比")
